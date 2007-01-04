@@ -1,0 +1,86 @@
+Simply RISC S1 Core - List of T1 accesses
+=========================================
+
+This is the list of the first accesses performed by
+the SPARC Core in the core1_mini test-suite of the
+OpenSPARC T1.
+
+- receive packet 1700....0010001 (INT_RET)
+- following requests go to region 4, base addr FFF0000020 (SSI ROM)
+- request packet C2018FFF0000020...00 (ROM Addr 20 -> 1 Byte?)
+- receive packet 111040300000005000100821060008410A0C0 (A-Type)
+- request packet C2008FFF0000024...00 (ROM Addr 24)
+- receive packet 111040300000005000100821060008410A0C0 (A-Type)
+- request packet C2008FFF0000028...00 (ROM Addr 28)
+- receive packet 111040300000005000100821060008410A0C0 (A-Type)
+- request packet C2010FFF000002C...00 (ROM Addr 2C)
+- receive packet 111040300000005000100821060008410A0C0 (A-Type)
+- request packet C2010FFF0000030...00 (ROM Addr 30)
+- receive packet 11104832870208410800181C0800001000000 (B-Type)
+- request packet C2008FFF0000034...00 (ROM Addr 34)
+- receive packet 11104832870208410800181C0800001000000 (B-Type)
+- request packet C2018FFF0000038...00 (ROM Addr 38)
+- receive packet 11104832870208410800181C0800001000000 (B-Type)
+- request packet C2000FFF000003C...00 (ROM Addr 3C)
+- receive packet 11104832870208410800181C0800001000000 (B-Type)
+- now we have some requests to region 3
+- request packet C200800000400C0...00 (RAM Bank 3 Addr 400C0)
+- very long pause (maybe PLL?) and then receive 2 consecutive packets
+- receive packet 11900B5802005A2102000821020A983287020 (C-Type)
+- receive packet 11102E2706000E2706040E2706080E27060C0 (D-Type)
+- request packet C201000000400C0...00 (RAM Bank 3 Addr 400C0)
+- a bit long pause and receive the same two consecutive packets
+- receive packet 11900B5802005A2102000821020A983287020 (C-Type)
+- receive packet 11102E2706000E2706040E2706080E27060C0 (D-Type)
+- now we are at 4900 ns, it is enough for now
+- after some other accesses to Bank 3 then they are everywhere in RAM
+
+And here are some notes about the memory map:
+
+@0000008000       // Section '.RED_EXT_SEC', segment 'text' - Was PA 0000040000 YES 40000-402C0       (2) RAM3012
+@0000009800       // Section '.RED_EXT_SEC', segment 'data' - Was PA 000004c000 YES 4C000-4C1A0       (5) RAM01
+@0000010000       // Section '.HTRAPS', segment 'text'      - Was PA 0000080000 YES 80C80-843A0       (7) RAM2
+@0000011800       // Section '.HTRAPS', segment 'data'      - Was PA 000008c000 NO (ZEROES)
+
+// MMU is useless?!?
+@0000200000       // TSB 'part_0_i_ctx_zero_ps0_tsb'        - Was PA 0001000000
+@0000200034       // from compressed 0x0000000001000000     - Was PA 00010001a0
+@0000200038       // from compressed 0x0000000001000000     - Was PA 00010001c0
+@0000200120       // from compressed 0x0000000001000000     - Was PA 0001000900
+@000020012C       // from compressed 0x0000000001000000     - Was PA 0001000960
+@0000200144       // from compressed 0x0000000001000000     - Was PA 0001000a20
+@0000200148       // from compressed 0x0000000001000000     - Was PA 0001000a40
+@0000400000       // TSB 'part_0_i_ctx_nonzero_ps0_tsb'     - Was PA 0002000000
+@0000400004       // from compressed 0x0000000002000000     - Was PA 0002000020
+@0000400034       // from compressed 0x0000000002000000     - Was PA 00020001a0
+@0000400038       // from compressed 0x0000000002000000     - Was PA 00020001c0
+@0000400144       // from compressed 0x0000000002000000     - Was PA 0002000a20
+@0000400148       // from compressed 0x0000000002000000     - Was PA 0002000a40
+@0000A00000       // TSB 'part_0_d_ctx_zero_ps0_tsb'        - Was PA 0005000000
+@0000A0012C       // from compressed 0x0000000005000000     - Was PA 0005000960
+@0000A00138       // from compressed 0x0000000005000000     - Was PA 00050009c0
+@0000A00434       // from compressed 0x0000000005000000     - Was PA 00050021a0
+@0000A00438       // from compressed 0x0000000005000000     - Was PA 00050021c0
+@0000C00000       // TSB 'part_0_d_ctx_nonzero_ps0_tsb'     - Was PA 0006000000
+@0000C00434       // from compressed 0x0000000006000000     - Was PA 00060021a0
+@0000C00438       // from compressed 0x0000000006000000     - Was PA 00060021c0
+@0008200000       // TSB_LINK 'part_0_tsb_link'             - Was PA 0041000000
+
+@0200024000       // Section '.TRAPS', segment 'text'       - Was PA 1000120000 YES 1000122400-10001225C0 (10) RAM31
+@0200025800       // Section '.TRAPS', segment 'data'       - Was PA 100012c000 NO (ZEROES)
+@0200028800       // Section '.HPRIV_RESET', segment 'text' - Was PA 1000144000 YES 1000144000-1000144020 (8) RAM0
+@0220306800       // Section '.KERNEL', segment 'text'      - Was PA 1101834000 YES 1101834000-1101834080 (9) RAM012
+@0220386800       // Section '.KERNEL', segment 'data'      - Was PA 1101c34000 YES 1101C34020-1101C34028 (11) RAM0
+@0226000000       // Section '.MAIN', segment 'text'        - Was PA 1130000000 YES 1130000000-1130000080 (12) RAM012
+@022E000000       // Section '.MAIN', segment 'data'        - Was PA 1170000000 NO (EMPTY)
+@022F004000       // Section '.USER_HEAP', segment 'data'   - Was PA 1178020000 NO (EMPTY)
+@022F006000       // Section '.MAIN', segment 'bss'         - Was PA 1178030000 NO (EMPTY)
+
+// SSI ROM
+@1FFE000000       // Section '.RED_SEC', segment 'text'     - Was PA fff0000000 YES FFF0000020-FFF000003C      (1) I/O
+@1FFE002000       // Section '.RED_SEC', segment 'data'     - Was PA fff0010000 NO (ONLY 1 WORD)
+
+// Accessed but missing in mem.image
+PA 0000000000-0000000400                                                                                      (6)
+PA A900000000-A9000000C0                                                                                      (3) RAM0123
+PA AA00000000-AA000000C0                                                                                      (4) RAM0123
