@@ -1,0 +1,4 @@
+search_path = { ../../../hdl/rtl/sparc_core/include ../../../hdl/rtl/s1_top }
+define_design_lib DEFAULT -path ./WORK_SYNTH
+verilogout_write_components = "FALSE"
+

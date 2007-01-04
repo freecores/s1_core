@@ -1,0 +1,6 @@
+#!/bin/bash
+
+cd $S1_ROOT/run/sim/icarus
+rm -rf *
+iverilog -o testbench -c$FILELIST_ICARUS
+

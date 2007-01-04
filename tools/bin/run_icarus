@@ -1,0 +1,6 @@
+#!/bin/bash
+
+cd $S1_ROOT/run/sim/icarus
+ln -f -s ../../../tests/boot/mem_*.image .
+./testbench &> sim.log
+

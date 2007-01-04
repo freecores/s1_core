@@ -1,0 +1,34 @@
+#!/bin/bash
+#
+# Compile a test for the S1 and build the memory.hex file.
+#
+# Parameter is test name without extension (e.g. to compile
+# $S1_ROOT/tests/hello.c) run "compile_test hello".
+#
+# Notes:
+# 1) requires sparc64-linux-gcc (see Download section on srisc.com);
+# 2) the generated image is currently not used by simulations.
+
+cd $S1_ROOT/tests
+rm -f *.o *~ *.bin *.dump *.hex     # Make clean
+if ( test $# != 1 ) then
+  echo "compile_test - Script to compile a test for the S1 Core";
+  echo "(C) 2006 by Simply RISC";
+  echo "Usage:";
+  echo "      compile_test <TEST_NAME>";
+  echo "where parameter is the test name without extension (e.g. 'hello').";
+  exit 1;
+fi
+if ( ! test -e $1.c ) then
+  echo "ERROR: Test $1.c does not exist into the tests directory!";
+  exit 1;
+fi
+
+sparc64-linux-g++ -c -O0 $1.c
+sparc64-linux-ld -Ur --script=$S1_ROOT/tools/src/linker.map -EB -o $1.bin $1.o
+sparc64-linux-objdump -d -EB -w -z $1.bin > $1.dump
+gcc -o $S1_ROOT/tools/bin/dump2hex.bin $S1_ROOT/tools/src/dump2hex.c
+grep "  " $1.dump | egrep -v "file format" | dump2hex.bin > dump/$1_MAIN.image
+
+rm -f *.o *~ *.bin *.dump           # Make clean
+

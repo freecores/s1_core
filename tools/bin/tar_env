@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# This script makes a tarball of the S1 environment:
+# you should call "clean_env" before calling this,
+# otherwise you will get a huge file.
+
+TARBALL=$HOME/simplyrisc-s1.tar
+
+rm -f $TARBALL* $S1_ROOT/*.tar*
+cd $S1_ROOT/..
+tar cvf $TARBALL `basename $S1_ROOT`
+gzip $TARBALL
+mv -f $TARBALL.gz $S1_ROOT
+

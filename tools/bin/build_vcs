@@ -1,0 +1,8 @@
+#!/bin/bash
+
+cd $S1_ROOT/run/sim/vcs
+rm -rf *
+vcs +cli -line -timescale=1ns/100ps -f $FILELIST_VCS
+mv -f simv testbench
+mv -f simv.daidir testbench.daidir
+

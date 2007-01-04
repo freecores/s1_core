@@ -1,0 +1,50 @@
+#!/bin/bash
+
+# Set source and destination directories
+SRC_DIR=$T1_ROOT/design/sys/iop
+DST_DIR=$S1_ROOT/hdl/rtl/sparc_core
+
+# Clean destination directory
+rm -rf $DST_DIR/*
+mkdir $DST_DIR/include
+
+# Copy all the Verilog files of the SPARC Core into destination directory
+cp $SRC_DIR/include/*.h $DST_DIR/include
+cp $SRC_DIR/srams/rtl/*.v $DST_DIR
+cp $SRC_DIR/analog/bw_clk/rtl/*.v $DST_DIR
+cp $SRC_DIR/analog/bw_rng/rtl/*.v $DST_DIR
+find $SRC_DIR/common -name "*.v" -exec cp {} $DST_DIR \;
+find $SRC_DIR/pr_macro -name "*.v" -exec cp {} $DST_DIR \;
+find $SRC_DIR/sparc -name "*.v" -exec cp {} $DST_DIR \;
+
+# Remove synthetized files -- if any
+find $DST_DIR -name "*_flat.v" -exec rm -f {} \;
+find $DST_DIR -name "*_flat_nc.v" -exec rm -f {} \;
+find $DST_DIR -name "*_hier.v" -exec rm -f {} \;
+rm -f $DST_DIR/bw_r_l2t.v
+
+# Clean the files by substituting the $error System Task
+for file in $DST_DIR/*.v ; do
+  sed -e 's/\$error/\$display/g' $file | sed -e 's/negedge rclk or rst_l/negedge rclk/g' > $DST_DIR/temp.v
+  mv -f $DST_DIR/temp.v $file
+done
+
+# Hack the SPARC Core to add the external stall input from the bridge
+sed -e 's/pcx_spc_grant_px,/pcx_spc_grant_px, wbm_spc_stallreq,/g' $DST_DIR/sparc.v |
+  sed -e 's/pcx_spc_grant_px;/pcx_spc_grant_px; input wbm_spc_stallreq;/g' |
+  sed -e 's/sparc_ifu ifu(/sparc_ifu ifu( .wbm_spc_stallreq(wbm_spc_stallreq),/g' > $DST_DIR/sparc_TMP.v
+mv -f $DST_DIR/sparc_TMP.v $DST_DIR/sparc.v
+sed -e 's/ffu_ifu_stallreq,/ffu_ifu_stallreq, wbm_spc_stallreq,/g' $DST_DIR/sparc_ifu.v |
+  sed -e 's/ffu_ifu_stallreq;/ffu_ifu_stallreq; input wbm_spc_stallreq;/g' |
+  sed -e 's/sparc_ifu_fcl fcl(/sparc_ifu_fcl fcl( .wbm_spc_stallreq(wbm_spc_stallreq),/g' > $DST_DIR/sparc_ifu_TMP.v
+mv -f $DST_DIR/sparc_ifu_TMP.v $DST_DIR/sparc_ifu.v
+sed -e 's/ffu_ifu_stallreq,/ffu_ifu_stallreq, wbm_spc_stallreq,/g' $DST_DIR/sparc_ifu_fcl.v |
+  sed -e 's/assign all_stallreq = ifq_fcl_stallreq/assign all_stallreq = ifq_fcl_stallreq | wbm_spc_stallreq/g' > $DST_DIR/sparc_ifu_fcl_TMP.v
+mv -f $DST_DIR/sparc_ifu_fcl_TMP.v $DST_DIR/sparc_ifu_fcl.v
+
+# Copy also behavioral libraries used for RTL simulations
+DST_DIR=$S1_ROOT/hdl/behav/sparc_libs
+rm -f $DST_DIR/*
+cp $SRC_DIR/../../../lib/m1/m1.behV $DST_DIR/m1_lib.v
+cp $SRC_DIR/../../../lib/u1/u1.behV $DST_DIR/u1_lib.v
+

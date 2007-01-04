@@ -1,0 +1,5 @@
+#!/bin/bash
+
+cd $S1_ROOT/run/synth/fpga
+iverilog -t fpga -o fpga.edif -c$FILELIST_FPGA &> synth.log
+

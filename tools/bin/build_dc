@@ -1,0 +1,7 @@
+#!/bin/bash
+
+cd $S1_ROOT/run/synth/dc
+rm -rf * .syn*  # Make clean
+ln -f -s ../../../tools/src/.synopsys_dc.setup
+dc_shell -db_mode -dcsh_mode -f $FILELIST_DC &> synth.log
+

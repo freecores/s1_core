@@ -1,0 +1,6 @@
+#!/bin/bash
+
+cd $S1_ROOT/run/sim/vcs
+ln -f -s ../../../tests/boot/mem_*.image .
+./testbench &> sim.log
+
