@@ -40,7 +40,7 @@ module spc2wbm (
   // System inputs
   input sys_clock_i;                            // System Clock
   input sys_reset_i;                            // System Reset
-  input[5:0] sys_interrupt_source_i;            // Interrupt Requests
+  input[5:0] sys_interrupt_source_i;            // Encoded Interrupt Source
 
   // SPARC-side inputs connected to the PCX (Processor-to-Cache Xbar) outputs of the SPARC Core
   input[4:0] spc_req_i;                         // Request
@@ -93,16 +93,15 @@ module spc2wbm (
   reg wbm2spc_valid;                                                   // Valid
   reg[(`CPX_RQ_HI-`CPX_RQ_LO):0] wbm2spc_type;                         // Request type
   reg[(`CPX_ERR_HI-`CPX_ERR_LO):0] wbm2spc_error;                      // Error
-  reg wbm2spc_rnwd_or_ncif;                                            // Read-Not-Write Data or Non-Cacheable Instruction Fetch
+  reg wbm2spc_nc;                                                      // Non-Cacheable
   reg[(`CPX_TH_HI-`CPX_TH_LO):0] wbm2spc_thread;                       // Thread
-  reg[(`CPX_P_HI-`CPX_P_LO):0] wbm2spc_packet_id;                      // Packet ID
+  reg wbm2spc_way_valid;                                               // L2 Way Valid
+  reg[(`CPX_WY_HI-`CPX_WY_LO):0] wbm2spc_way;                          // Replaced L2 Way
   reg[(`CPX_DA_HI-`CPX_DA_LO):0] wbm2spc_data;                         // Load Data
-  reg[(`CPX_IN_HI-`CPX_IN_LO):0] wbm2spc_interrupt_source;             // Interrupt Source
-  reg wbm2spc_reset_not_int;                                           // Reset and not interrupt packet
-  reg[4:0] wbm2spc_virtual_cpu_target;                                 // ID of virtual CPU target
-  reg[(`CPX_IN_HI-`CPX_IN_LO):0] wbm2spc_intsrc_or_resettype;          // Interrupt Source or Reset Type
-  reg[(`CPX_IN_HI-`CPX_IN_LO):0] wbm2spc_new_irq;                      // New Interrupt Request Pending
-
+  reg[6:0] wbm2spc_interrupt_source;                                   // Encoded Interrupt Source
+  reg wbm2spc_interrupt_new;                                           // New Interrupt Pending
+   
+   
   /*
    * Wires
    */
@@ -111,19 +110,17 @@ module spc2wbm (
   wire spc2wbm_req;                                                     // Request
   wire spc2wbm_valid;                                                   // Valid
   wire[(`PCX_RQ_HI-`PCX_RQ_LO):0] spc2wbm_type;                         // Request type
-  wire spc2wbm_rnwd_or_ncif;                                            // Read-Not-Write Data or Non-Cacheable Instruction Fetch
+  wire spc2wbm_nc;                                                      // Non-Cacheable
   wire[(`PCX_CP_HI-`PCX_CP_LO):0] spc2wbm_cpu_id;                       // CPU ID
   wire[(`PCX_TH_HI-`PCX_TH_LO):0] spc2wbm_thread;                       // Thread
-  wire[(`PCX_BF_HI-`PCX_BF_LO):0] spc2wbm_buffer;                       // Buffer
-  wire[(`PCX_P_HI-`PCX_P_LO):0] spc2wbm_packet_id;                      // Packet ID
+  wire spc2wbm_invalidate;                                              // Invalidate all
+  wire[(`PCX_WY_HI-`PCX_WY_LO):0] spc2wbm_way;                          // Replaced L1 Way
   wire[(`PCX_SZ_HI-`PCX_SZ_LO):0] spc2wbm_size;                         // Load/Store size
-  wire[(`PCX_ERR_HI-`PCX_ERR_LO):0] spc2wbm_error;                      // Error
   wire[(`PCX_AD_HI-`PCX_AD_LO):0] spc2wbm_addr;                         // Address
   wire[(`PCX_DA_HI-`PCX_DA_LO):0] spc2wbm_data;                         // Store Data
 
   // Return packets assembled with various fields
-  wire[`CPX_WIDTH-1:0] wbm2spc_packet_dat;                              // Incoming Packet - Data
-  wire[`CPX_WIDTH-1:0] wbm2spc_packet_int;                              // Incoming Packet - Interrupt
+  wire[`CPX_WIDTH-1:0] wbm2spc_packet;                                  // Incoming Packet
 
   /*
    * Encode/decode incoming info
@@ -151,24 +148,18 @@ module spc2wbm (
   assign spc2wbm_req = ( spc_req_i[4] | spc_req_i[3] | spc_req_i[2] | spc_req_i[1] | spc_req_i[0] );
   assign spc2wbm_valid = spc2wbm_packet[`PCX_VLD];
   assign spc2wbm_type = spc2wbm_packet[`PCX_RQ_HI:`PCX_RQ_LO];
-  assign spc2wbm_rnwd_or_ncif = spc2wbm_packet[`PCX_R];
+  assign spc2wbm_nc = spc2wbm_packet[`PCX_NC];
   assign spc2wbm_cpu_id = spc2wbm_packet[`PCX_CP_HI:`PCX_CP_LO];
   assign spc2wbm_thread = spc2wbm_packet[`PCX_TH_HI:`PCX_TH_LO];
-  assign spc2wbm_buffer = spc2wbm_packet[`PCX_BF_HI:`PCX_BF_LO];
-  assign spc2wbm_packet_id = spc2wbm_packet[`PCX_P_HI:`PCX_P_LO];
+  assign spc2wbm_invalidate = spc2wbm_packet[`PCX_INVALL];
+  assign spc2wbm_way = spc2wbm_packet[`PCX_WY_HI:`PCX_WY_LO];
   assign spc2wbm_size = spc2wbm_packet[`PCX_SZ_HI:`PCX_SZ_LO];
-  assign spc2wbm_error = spc2wbm_packet[`PCX_ERR_HI:`PCX_ERR_LO];
   assign spc2wbm_addr = spc2wbm_packet[`PCX_AD_HI:`PCX_AD_LO];
   assign spc2wbm_data = spc2wbm_packet[`PCX_DA_HI:`PCX_DA_LO];
 
   // Encode info going to the SPC side assembling return packets
-  assign wbm2spc_packet_dat = { wbm2spc_valid, wbm2spc_type, wbm2spc_error,
-    wbm2spc_rnwd_or_ncif, wbm2spc_thread, 2'b00, wbm2spc_packet_id,
-    2'b00, wbm2spc_data };
-  assign wbm2spc_packet_int = { wbm2spc_valid, wbm2spc_type, wbm2spc_error,
-    wbm2spc_rnwd_or_ncif, wbm2spc_thread, wbm2spc_interrupt_source,
-    111'b0, wbm2spc_reset_not_int, 3'b0, wbm2spc_virtual_cpu_target,
-    2'b0, wbm2spc_intsrc_or_resettype };
+  assign wbm2spc_packet = { wbm2spc_valid, wbm2spc_type, wbm2spc_error, wbm2spc_nc,
+    wbm2spc_thread, wbm2spc_way_valid, wbm2spc_way, 3'b100, wbm2spc_data };
 
   /*
    * State Machine
@@ -198,14 +189,11 @@ module spc2wbm (
       wbm2spc_valid = 1;
       wbm2spc_type = `INT_RET;
       wbm2spc_error = 0;
-      wbm2spc_rnwd_or_ncif = 0;
+      wbm2spc_nc = 0;
       wbm2spc_thread = 0;
-      wbm2spc_packet_id = 0;
-      wbm2spc_interrupt_source = 0;
-      wbm2spc_reset_not_int = 1;
-      wbm2spc_virtual_cpu_target = 0;
-      wbm2spc_intsrc_or_resettype = 6'b000001;
-      wbm2spc_new_irq = 0;  // Ignored for wakeup packet
+      wbm2spc_way_valid = 0;
+      wbm2spc_way = 0;
+      wbm2spc_data = 64'h10001;
 
       // Clear state machine
       state = `STATE_WAKEUP;
@@ -218,7 +206,7 @@ module spc2wbm (
 
         // Send wakeup packet
         spc_ready_o = 1;
-        spc_packetin_o = wbm2spc_packet_int;
+        spc_packetin_o = wbm2spc_packet;
 
 // synopsys translate_off
         // Display comment
@@ -255,32 +243,29 @@ module spc2wbm (
         end else if(sys_interrupt_source_i!=wbm2spc_interrupt_source) begin
 
           // Set the flag for next cycle
-          wbm2spc_new_irq = 1;
+          wbm2spc_interrupt_new = 1;
 
           // Prepare the interrupt packet for the SPARC Core
           wbm2spc_valid = 1;
           wbm2spc_type = `INT_RET;
           wbm2spc_error = 0;
-          wbm2spc_rnwd_or_ncif = 0;
+          wbm2spc_nc = 0;
           wbm2spc_thread = 0;
-          wbm2spc_packet_id = 0;
-          wbm2spc_interrupt_source = sys_interrupt_source_i;
-          wbm2spc_reset_not_int = 0;
-          wbm2spc_virtual_cpu_target = 0;
-          wbm2spc_intsrc_or_resettype = sys_interrupt_source_i;
+          wbm2spc_way_valid = 0;
+          wbm2spc_way = 0;
 
           // Stall other requests from the SPARC Core
           spc_stallreq_o = 1;
 
         // Next cycle see if there's an int to be forwarded to the Core
-        end else if(wbm2spc_interrupt_source!=6'b000000 && wbm2spc_new_irq) begin
+        end else if(wbm2spc_interrupt_source!=6'b000000 && wbm2spc_interrupt_new) begin
 
           // Clean the flag
-          wbm2spc_new_irq = 0;
+          wbm2spc_interrupt_new = 0;
 
           // Send the interrupt packet to the Core
           spc_ready_o = 1;
-          spc_packetin_o = wbm2spc_packet_int;
+          spc_packetin_o = wbm2spc_packet;
 
           // Stall other requests from the SPARC Core
           spc_stallreq_o = 1;
@@ -356,10 +341,10 @@ module spc2wbm (
             // For accesses to RAM 256 bits are expected (2 ret packets)
             wbm_sel_o = 8'b11111111;
 
-        end else begin
-
-          // For data load/store use the provided data
-          wbm_we_o = !spc2wbm_rnwd_or_ncif;
+        end else if(spc2wbm_type==`LOAD_RQ) begin
+	   
+          // For data load use the provided data
+          wbm_we_o = 0;
           case(spc2wbm_size)
             `PCX_SZ_1B: wbm_sel_o = (1'b1<<spc2wbm_addr[2:0]);
             `PCX_SZ_2B: wbm_sel_o = (2'b11<<(spc2wbm_addr[2:1]<<1));
@@ -369,12 +354,29 @@ module spc2wbm (
             default: wbm_sel_o = 8'b00000000;
           endcase
 
+        end else if(spc2wbm_type==`STORE_RQ) begin
+
+          // For data store use the provided data
+          wbm_we_o = 1;
+          case(spc2wbm_size)
+            `PCX_SZ_1B: wbm_sel_o = (1'b1<<spc2wbm_addr[2:0]);
+            `PCX_SZ_2B: wbm_sel_o = (2'b11<<(spc2wbm_addr[2:1]<<1));
+            `PCX_SZ_4B: wbm_sel_o = (4'b1111<<(spc2wbm_addr[2]<<2));
+            `PCX_SZ_8B: wbm_sel_o = 8'b11111111;
+            `PCX_SZ_16B: wbm_sel_o = 8'b11111111;  // Requires a 2nd access
+            default: wbm_sel_o = 8'b00000000;
+          endcase
+
+        end else begin
+
+          wbm_we_o = 1;
+          wbm_sel_o = 8'b00000000;
+
         end
 
 // synopsys translate_off
         // Print details of request packet
-        if(spc2wbm_valid==1) $display("INFO: SPC2WBM: Request has valid bit");
-        else $display("INFO: SPC2WBM: Request has not valid bit");
+        $display("INFO: SPC2WBM: Valid bit is %X", spc2wbm_valid);
         case(spc2wbm_type)
           `LOAD_RQ: $display("INFO: SPC2WBM: Request of Type LOAD_RQ");
           `IMISS_RQ: $display("INFO: SPC2WBM: Request of Type IMISS_RQ");
@@ -390,18 +392,12 @@ module spc2wbm (
           `FWD_RPY: $display("INFO: SPC2WBM: Request of Type FWD_RPY");
           `RSVD_RQ: $display("INFO: SPC2WBM: Request of Type RSVD_RQ");
           default: $display("INFO: SPC2WBM: Request of Type Unknown");
-        endcase
-        if(spc2wbm_type==`IMISS_RQ) begin
-          if(spc2wbm_rnwd_or_ncif==1) $display("INFO: SPC2WBM: Request is Non-Cacheable");
-          else $display("INFO: SPC2WBM: Request is Cacheable");
-        end else begin
-          if(spc2wbm_rnwd_or_ncif==1) $display("INFO: SPC2WBM: Request is a Read Access");
-          else $display("INFO: SPC2WBM: Request is a Write Access");
-        end
-        $display("INFO: SPC2WBM: CPU ID is %X", spc2wbm_cpu_id);
+	endcase
+        $display("INFO: SPC2WBM: Non-Cacheable is %X", spc2wbm_nc);
+        $display("INFO: SPC2WBM: CPU-ID is %X", spc2wbm_cpu_id);
         $display("INFO: SPC2WBM: Thread is %X", spc2wbm_thread);
-        $display("INFO: SPC2WBM: Buffer is %X", spc2wbm_buffer);
-        $display("INFO: SPC2WBM: Packet ID is %X", spc2wbm_packet_id);
+        $display("INFO: SPC2WBM: Invalidate All is %X", spc2wbm_invalidate);
+        $display("INFO: SPC2WBM: Replaced L1 Way is %X", spc2wbm_way);
         case(spc2wbm_size)
           `PCX_SZ_1B: $display("INFO: SPC2WBM: Request size is 1 Byte");
           `PCX_SZ_2B: $display("INFO: SPC2WBM: Request size is 2 Bytes");
@@ -410,7 +406,6 @@ module spc2wbm (
           `PCX_SZ_16B: $display("INFO: SPC2WBM: Request size is 16 Bytes");
           default: $display("INFO: SPC2WBM: Request size is Unknown");
         endcase
-        $display("INFO: SPC2WBM: Error is %X", spc2wbm_error);
         $display("INFO: SPC2WBM: Address is %X", spc2wbm_addr);
         $display("INFO: SPC2WBM: Data is %X", spc2wbm_data);
         $display("INFO: SPC2WBM: Request forwarded from SPARC Core to Wishbone Master");
@@ -436,28 +431,24 @@ module spc2wbm (
 
           // Latch the data and set up the return packet for the SPARC Core
           wbm2spc_valid = 1;
-          wbm2spc_rnwd_or_ncif = spc2wbm_rnwd_or_ncif;
-          if(spc2wbm_addr[3]==0)
-            wbm2spc_data = { wbm_data_i, 64'b0 };
-          else
-            wbm2spc_data = { 64'b0, wbm_data_i };
           case(spc2wbm_type)
             `IMISS_RQ: begin
               wbm2spc_type = `IFILL_RET; // I-Cache Miss
             end
             `LOAD_RQ: begin
-              wbm2spc_type = `LOAD_RET;   // Load
+              wbm2spc_type = `LOAD_RET;  // Load
             end
             `STORE_RQ: begin
               wbm2spc_type = `ST_ACK;    // Store
             end
           endcase
           wbm2spc_error = 0;
+          wbm2spc_nc = spc2wbm_nc;
           wbm2spc_thread = spc2wbm_thread;
-// CHECK THIS!!!!!!!
-//        wbm2spc_packet_id = spc2wbm_packet_id;
-          if(spc2wbm_region==5'b10000) wbm2spc_packet_id = 2'b01;
-          else wbm2spc_packet_id = 2'b00;
+          wbm2spc_way_valid = 0;
+          wbm2spc_way = 0;
+          if(spc2wbm_addr[3]==0) wbm2spc_data = { wbm_data_i, 64'b0 };
+          else wbm2spc_data = { 64'b0, wbm_data_i };
 
           // See if other 64-bit Wishbone accesses are required
           if(
@@ -520,7 +511,7 @@ module spc2wbm (
 
         // Return the packet to the SPARC Core
         spc_ready_o = 1;
-        spc_packetin_o = wbm2spc_packet_dat;
+        spc_packetin_o = wbm2spc_packet;
 
         // Issue a third request on the Wishbone bus
         wbm_cycle_o = 1;
@@ -532,24 +523,18 @@ module spc2wbm (
 
 // synopsys translate_off
         // Print details of return packet
-        if(wbm2spc_valid==1) $display("INFO: WBM2SPC: Return packet has valid bit");
-        else $display("INFO: WBM2SPC: Return packet has not valid bit");
+        $display("INFO: WBM2SPC: Return packet has valid bit %X", wbm2spc_valid);
         case(wbm2spc_type)
           `IFILL_RET: $display("INFO: WBM2SPC: Return Packet of Type IFILL_RET");
           `LOAD_RET: $display("INFO: WBM2SPC: Return Packet of Type LOAD_RET");
           `ST_ACK: $display("INFO: WBM2SPC: Return Packet of Type ST_ACK");
           default: $display("INFO: WBM2SPC: Return Packet of Type Unknown");
         endcase
-        if(wbm2spc_type==`IFILL_RET) begin
-          if(wbm2spc_rnwd_or_ncif==1) $display("INFO: WBM2SPC: Return Packet is Non-Cacheable");
-          else $display("INFO: WBM2SPC: Return Packet is Cacheable");
-        end else begin
-          if(spc2wbm_rnwd_or_ncif==1) $display("INFO: WBM2SPC: Return Packet is a Read Access");
-          else $display("INFO: WBM2SPC: Return Packet is a Write Access");
-        end
-        $display("INFO: WBM2SPC: Thread is %X", wbm2spc_thread);
-        $display("INFO: WBM2SPC: Packet ID is %X", wbm2spc_packet_id);
         $display("INFO: WBM2SPC: Error is %X", wbm2spc_error);
+        $display("INFO: WBM2SPC: Non-Cacheable is %X", wbm2spc_nc);
+        $display("INFO: WBM2SPC: Thread is %X", wbm2spc_thread);
+        $display("INFO: WBM2SPC: Way Valid is %X", wbm2spc_way_valid);
+        $display("INFO: WBM2SPC: Replaced L2 Way is %X", wbm2spc_way);
         $display("INFO: WBM2SPC: Data is %X", wbm2spc_data);
         $display("INFO: WBM2SPC: Return Packet forwarded from Wishbone Master to SPARC Core");
 // synopsys translate_on
@@ -627,31 +612,25 @@ module spc2wbm (
 
         // Return the packet to the SPARC Core
         spc_ready_o = 1;
-        spc_packetin_o = wbm2spc_packet_dat;
+        spc_packetin_o = wbm2spc_packet;
 
         // Unconditional state change
         state = `STATE_IDLE;
 
 // synopsys translate_off
         // Print details of return packet
-        if(wbm2spc_valid==1) $display("INFO: WBM2SPC: Return packet has valid bit");
-        else $display("INFO: WBM2SPC: Return packet has not valid bit");
+        $display("INFO: WBM2SPC: Valid bit is %X", wbm2spc_valid);
         case(wbm2spc_type)
           `IFILL_RET: $display("INFO: WBM2SPC: Return Packet of Type IFILL_RET");
           `LOAD_RET: $display("INFO: WBM2SPC: Return Packet of Type LOAD_RET");
           `ST_ACK: $display("INFO: WBM2SPC: Return Packet of Type ST_ACK");
           default: $display("INFO: WBM2SPC: Return Packet of Type Unknown");
         endcase
-        if(wbm2spc_type==`IFILL_RET) begin
-          if(wbm2spc_rnwd_or_ncif==1) $display("INFO: WBM2SPC: Return Packet is Non-Cacheable");
-          else $display("INFO: WBM2SPC: Return Packet is Cacheable");
-        end else begin
-          if(spc2wbm_rnwd_or_ncif==1) $display("INFO: WBM2SPC: Return Packet is a Read Access");
-          else $display("INFO: WBM2SPC: Return Packet is a Write Access");
-        end
-        $display("INFO: WBM2SPC: Thread is %X", wbm2spc_thread);
-        $display("INFO: WBM2SPC: Packet ID is %X", wbm2spc_packet_id);
         $display("INFO: WBM2SPC: Error is %X", wbm2spc_error);
+        $display("INFO: WBM2SPC: Non-Cacheable bit is %X", wbm2spc_nc);
+        $display("INFO: WBM2SPC: Thread is %X", wbm2spc_thread);
+        $display("INFO: WBM2SPC: Way Valid is %X", wbm2spc_way_valid);
+        $display("INFO: WBM2SPC: Replaced L2 Way is %X", wbm2spc_way);
         $display("INFO: WBM2SPC: Data is %X", wbm2spc_data);
         $display("INFO: WBM2SPC: Return Packet forwarded from Wishbone Master to SPARC Core");
 // synopsys translate_on
