@@ -24,8 +24,7 @@ int main() {
     len = strlen(buf);
     if(len==LEN_REQ && dir==CHAR_REQ) {
 
-      if(bitsToInt(PCX_VLD,PCX_VLD)==0) printf("INFO: SPC2WBM: *** DIRTY REQUEST FROM SPARC CORE ***\n");
-      else {
+      if(bitsToInt(PCX_VLD,PCX_VLD)==1) {
 
         // Write details of request packet
         printf("INFO: SPC2WBM: *** NEW REQUEST FROM SPARC CORE ***\n");
@@ -47,10 +46,10 @@ int main() {
           default: printf("INFO: SPC2WBM: Request of Type Unknown\n");
         }
         printf("INFO: SPC2WBM: Non-Cacheable bit is %d\n", bitsToInt(PCX_R,PCX_R));
-        printf("INFO: SPC2WBM: CPU ID is %0X\n", bitsToInt(PCX_CP_HI,PCX_CP_LO));
-        printf("INFO: SPC2WBM: Thread is %0X\n", bitsToInt(PCX_TH_HI,PCX_TH_LO));
-        printf("INFO: SPC2WBM: Invalidate All is %0X\n", bitsToInt(PCX_INVALL,PCX_INVALL));
-        printf("INFO: SPC2WBM: Replaced L1 Way is %0X\n", bitsToInt(PCX_WY_HI,PCX_WY_LO));
+        printf("INFO: SPC2WBM: CPU-ID is %0x\n", bitsToInt(PCX_CP_HI,PCX_CP_LO));
+        printf("INFO: SPC2WBM: Thread is %0x\n", bitsToInt(PCX_TH_HI,PCX_TH_LO));
+        printf("INFO: SPC2WBM: Invalidate All is %0x\n", bitsToInt(PCX_INVALL,PCX_INVALL));
+        printf("INFO: SPC2WBM: Replaced L1 Way is %0x\n", bitsToInt(PCX_WY_HI,PCX_WY_LO));
         switch(bitsToInt(PCX_SZ_HI,PCX_SZ_LO)) {
           case PCX_SZ_1B: printf("INFO: SPC2WBM: Request size is 1 Byte\n"); break;
           case PCX_SZ_2B: printf("INFO: SPC2WBM: Request size is 2 Bytes\n"); break;
@@ -59,15 +58,13 @@ int main() {
 	  case PCX_SZ_16B: printf("INFO: SPC2WBM: Request size is 16 Bytes\n"); break;
           default: printf("INFO: SPC2WBM: Request size is Unknown\n");
         }
-        printf("INFO: SPC2WBM: Address is %05X%05X\n", bitsToInt(PCX_AD_HI,PCX_AD_HI-19), bitsToInt(PCX_AD_HI-20,PCX_AD_LO));
-        printf("INFO: SPC2WBM: Data is %08X%08X\n", bitsToInt(PCX_DA_HI,PCX_DA_HI-31), bitsToInt(PCX_DA_HI-32,PCX_DA_LO));
-        printf("INFO: SPC2WBM: Request forwarded from SPARC Core to Wishbone Master\n");
+        printf("INFO: SPC2WBM: Address is %05x%05x\n", bitsToInt(PCX_AD_HI,PCX_AD_HI-19), bitsToInt(PCX_AD_HI-20,PCX_AD_LO));
+        printf("INFO: SPC2WBM: Data is %08x%08x\n", bitsToInt(PCX_DA_HI,PCX_DA_HI-31), bitsToInt(PCX_DA_HI-32,PCX_DA_LO));
       }
 
     } else if(len==LEN_RET && dir==CHAR_RET) {
 
-      if(bitsToInt(CPX_VLD,CPX_VLD)==0) printf("INFO: WBM2SPC: *** DIRTY PACKET TO SPARC CORE ***\n");
-      else {
+      if(bitsToInt(CPX_VLD,CPX_VLD)==1) {
 
         // Write details of return packet
         printf("INFO: WBM2SPC: *** RETURN PACKET TO SPARC CORE ***\n");
@@ -78,13 +75,16 @@ int main() {
           case ST_ACK: printf("INFO: WBM2SPC: Return Packet of Type ST_ACK\n"); break;
           default: printf("INFO: WBM2SPC: Return Packet of Type Unknown\n");
         }
-        printf("INFO: WBM2SPC: Error is %0X\n", bitsToInt(CPX_ERR_HI,CPX_ERR_LO));
+        printf("INFO: WBM2SPC: L2 Miss is %0x\n", bitsToInt(CPX_ERR_HI,CPX_ERR_HI));
+        printf("INFO: WBM2SPC: Error is %0x\n", bitsToInt(CPX_ERR_HI-1,CPX_ERR_LO));
         printf("INFO: WBM2SPC: Non-Cacheable bit is %d\n", bitsToInt(CPX_R,CPX_R));
-        printf("INFO: WBM2SPC: Thread is %0X\n", bitsToInt(CPX_TH_HI,CPX_TH_LO));
-        printf("INFO: WBM2SPC: Way Valid is %0X\n", bitsToInt(CPX_WYVLD,CPX_WYVLD));
-        printf("INFO: WBM2SPC: Replaced L2 Way is %0X\n", bitsToInt(CPX_WY_HI,CPX_WY_LO));
-        printf("INFO: WBM2SPC: Data is %08X%08X%08X%08X\n", bitsToInt(CPX_DA_HI,CPX_DA_HI-31), bitsToInt(CPX_DA_HI-32,CPX_DA_HI-63), bitsToInt(CPX_DA_HI-64,CPX_DA_HI-95), bitsToInt(CPX_DA_HI-96,CPX_DA_LO));
-        printf("INFO: WBM2SPC: Return Packet forwarded from Wishbone Master to SPARC Core\n");
+        printf("INFO: WBM2SPC: Thread is %0x\n", bitsToInt(CPX_TH_HI,CPX_TH_LO));
+        printf("INFO: WBM2SPC: Way Valid is %0x\n", bitsToInt(CPX_WYVLD,CPX_WYVLD));
+        printf("INFO: WBM2SPC: Replaced L2 Way is %0x\n", bitsToInt(CPX_WY_HI,CPX_WY_LO));
+        printf("INFO: WBM2SPC: Fetch for Boot is %0x\n", bitsToInt(CPX_IF4B,CPX_IF4B));
+        printf("INFO: WBM2SPC: Atomic LD/ST or 2nd IFill Packet is %0x\n", bitsToInt(CPX_IF4B-1,CPX_IF4B-1));
+        printf("INFO: WBM2SPC: PFL is %0x\n", bitsToInt(CPX_IF4B-2,CPX_IF4B-2));
+        printf("INFO: WBM2SPC: Data is %08x%08x%08x%08x\n", bitsToInt(CPX_DA_HI,CPX_DA_HI-31), bitsToInt(CPX_DA_HI-32,CPX_DA_HI-63), bitsToInt(CPX_DA_HI-64,CPX_DA_HI-95), bitsToInt(CPX_DA_HI-96,CPX_DA_LO));
       }
 
     } else {

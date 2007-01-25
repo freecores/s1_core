@@ -86,17 +86,21 @@ module spc2wbm (
   // Registers to latch requests from SPARC Core to Wishbone Master
   reg[3:0] state;
   reg[4:0] spc2wbm_region;                                             // Target region number (one-hot encoded)
-  reg spc2wbm_atom;
+  reg spc2wbm_atomic;                                                  // Request is Atomic
   reg[(`PCX_WIDTH-1):0] spc2wbm_packet;                                // Latched Packet
 
   // Wishbone Master to SPARC Core info used to encode the return packet
   reg wbm2spc_valid;                                                   // Valid
   reg[(`CPX_RQ_HI-`CPX_RQ_LO):0] wbm2spc_type;                         // Request type
-  reg[(`CPX_ERR_HI-`CPX_ERR_LO):0] wbm2spc_error;                      // Error
+  reg wbm2spc_miss;                                                    // L2 Miss
+  reg[(`CPX_ERR_HI-`CPX_ERR_LO-1):0] wbm2spc_error;                    // Error
   reg wbm2spc_nc;                                                      // Non-Cacheable
   reg[(`CPX_TH_HI-`CPX_TH_LO):0] wbm2spc_thread;                       // Thread
   reg wbm2spc_way_valid;                                               // L2 Way Valid
   reg[(`CPX_WY_HI-`CPX_WY_LO):0] wbm2spc_way;                          // Replaced L2 Way
+  reg wbm2spc_boot_fetch;                                              // Fetch for Boot
+  reg wbm2spc_atomic;                                                  // Atomic LD/ST or 2nd IFill packet
+  reg wbm2spc_pfl;                                                     // PFL
   reg[(`CPX_DA_HI-`CPX_DA_LO):0] wbm2spc_data;                         // Load Data
   reg[6:0] wbm2spc_interrupt_source;                                   // Encoded Interrupt Source
   reg wbm2spc_interrupt_new;                                           // New Interrupt Pending
@@ -158,8 +162,8 @@ module spc2wbm (
   assign spc2wbm_data = spc2wbm_packet[`PCX_DA_HI:`PCX_DA_LO];
 
   // Encode info going to the SPC side assembling return packets
-  assign wbm2spc_packet = { wbm2spc_valid, wbm2spc_type, wbm2spc_error, wbm2spc_nc,
-    wbm2spc_thread, wbm2spc_way_valid, wbm2spc_way, 3'b100, wbm2spc_data };
+  assign wbm2spc_packet = { wbm2spc_valid, wbm2spc_type, wbm2spc_miss, wbm2spc_error, wbm2spc_nc, wbm2spc_thread,
+    wbm2spc_way_valid, wbm2spc_way, wbm2spc_boot_fetch, wbm2spc_atomic, wbm2spc_pfl, wbm2spc_data };
 
   /*
    * State Machine
@@ -188,11 +192,15 @@ module spc2wbm (
       // spc_packetin_o = `CPX_WIDTH'h1700000000000000000000000000000010001;
       wbm2spc_valid = 1;
       wbm2spc_type = `INT_RET;
+      wbm2spc_miss = 0;
       wbm2spc_error = 0;
       wbm2spc_nc = 0;
       wbm2spc_thread = 0;
       wbm2spc_way_valid = 0;
       wbm2spc_way = 0;
+      wbm2spc_boot_fetch = 0;
+      wbm2spc_atomic = 0;
+      wbm2spc_pfl = 0;
       wbm2spc_data = 64'h10001;
 
       // Clear state machine
@@ -234,7 +242,7 @@ module spc2wbm (
 
           // Latch target region and atomicity
           spc2wbm_region = spc_req_i;
-          spc2wbm_atom = spc_atom_i;
+          spc2wbm_atomic = spc_atom_i;
 
           // Jump to next state
           state = `STATE_REQUEST_LATCHED;
@@ -248,11 +256,15 @@ module spc2wbm (
           // Prepare the interrupt packet for the SPARC Core
           wbm2spc_valid = 1;
           wbm2spc_type = `INT_RET;
+          wbm2spc_miss = 0;
           wbm2spc_error = 0;
           wbm2spc_nc = 0;
           wbm2spc_thread = 0;
           wbm2spc_way_valid = 0;
           wbm2spc_way = 0;
+          wbm2spc_boot_fetch = 0;
+          wbm2spc_atomic = 0;
+          wbm2spc_pfl = 0;	   
 
           // Stall other requests from the SPARC Core
           spc_stallreq_o = 1;
@@ -307,7 +319,7 @@ module spc2wbm (
         else if(spc2wbm_region[3]==1) $display("INFO: SPC2WBM: Request to RAM Bank 3");
         else if(spc2wbm_region[4]==1) $display("INFO: SPC2WBM: Request targeted to I/O Block");
         else $display("INFO: SPC2WBM: Request to target region unknown");
-        if(spc2wbm_atom==1) $display("INFO: SPC2WBM: Request is ATOMIC");
+        if(spc2wbm_atomic==1) $display("INFO: SPC2WBM: Request is ATOMIC");
         else $display("INFO: SPC2WBM: Request is not atomic");
 // synopsys translate_on
 
@@ -393,7 +405,7 @@ module spc2wbm (
           `RSVD_RQ: $display("INFO: SPC2WBM: Request of Type RSVD_RQ");
           default: $display("INFO: SPC2WBM: Request of Type Unknown");
 	endcase
-        $display("INFO: SPC2WBM: Non-Cacheable is %X", spc2wbm_nc);
+        $display("INFO: SPC2WBM: Non-Cacheable bit is %X", spc2wbm_nc);
         $display("INFO: SPC2WBM: CPU-ID is %X", spc2wbm_cpu_id);
         $display("INFO: SPC2WBM: Thread is %X", spc2wbm_thread);
         $display("INFO: SPC2WBM: Invalidate All is %X", spc2wbm_invalidate);
@@ -408,7 +420,6 @@ module spc2wbm (
         endcase
         $display("INFO: SPC2WBM: Address is %X", spc2wbm_addr);
         $display("INFO: SPC2WBM: Data is %X", spc2wbm_data);
-        $display("INFO: SPC2WBM: Request forwarded from SPARC Core to Wishbone Master");
 // synopsys translate_on
 
         // Unconditional state change
@@ -422,7 +433,7 @@ module spc2wbm (
         if(wbm_ack_i==1) begin
 
           // Clear previously modified outputs
-          if(spc2wbm_atom==0) wbm_cycle_o = 0;
+          if(spc2wbm_atomic==0) wbm_cycle_o = 0;
           wbm_strobe_o = 0;
           wbm_we_o = 0;
           wbm_addr_o = 64'b0;
@@ -434,19 +445,26 @@ module spc2wbm (
           case(spc2wbm_type)
             `IMISS_RQ: begin
               wbm2spc_type = `IFILL_RET; // I-Cache Miss
+              wbm2spc_atomic = 0;
             end
             `LOAD_RQ: begin
               wbm2spc_type = `LOAD_RET;  // Load
+              wbm2spc_atomic = spc2wbm_atomic;
             end
             `STORE_RQ: begin
               wbm2spc_type = `ST_ACK;    // Store
+              wbm2spc_atomic = spc2wbm_atomic;
             end
           endcase
+          wbm2spc_miss = 0;
           wbm2spc_error = 0;
           wbm2spc_nc = spc2wbm_nc;
           wbm2spc_thread = spc2wbm_thread;
           wbm2spc_way_valid = 0;
           wbm2spc_way = 0;
+	  if(spc2wbm_region==5'b10000) wbm2spc_boot_fetch = 1;
+	  else wbm2spc_boot_fetch = 0;
+          wbm2spc_pfl = 0;	   
           if(spc2wbm_addr[3]==0) wbm2spc_data = { wbm_data_i, 64'b0 };
           else wbm2spc_data = { 64'b0, wbm_data_i };
 
@@ -486,7 +504,7 @@ module spc2wbm (
         if(wbm_ack_i==1) begin
 
           // Clear previously modified outputs
-          if(spc2wbm_atom==0) wbm_cycle_o = 0;
+          if(spc2wbm_atomic==0) wbm_cycle_o = 0;
           wbm_strobe_o = 0;
           wbm_we_o = 0;
           wbm_addr_o = 64'b0;
@@ -523,20 +541,24 @@ module spc2wbm (
 
 // synopsys translate_off
         // Print details of return packet
-        $display("INFO: WBM2SPC: Return packet has valid bit %X", wbm2spc_valid);
+        $display("INFO: WBM2SPC: *** RETURN PACKET TO SPARC CORE ***");	 
+        $display("INFO: WBM2SPC: Valid bit is %X", wbm2spc_valid);
         case(wbm2spc_type)
           `IFILL_RET: $display("INFO: WBM2SPC: Return Packet of Type IFILL_RET");
           `LOAD_RET: $display("INFO: WBM2SPC: Return Packet of Type LOAD_RET");
           `ST_ACK: $display("INFO: WBM2SPC: Return Packet of Type ST_ACK");
           default: $display("INFO: WBM2SPC: Return Packet of Type Unknown");
         endcase
+        $display("INFO: WBM2SPC: L2 Miss is %X", wbm2spc_miss);
         $display("INFO: WBM2SPC: Error is %X", wbm2spc_error);
-        $display("INFO: WBM2SPC: Non-Cacheable is %X", wbm2spc_nc);
+        $display("INFO: WBM2SPC: Non-Cacheable bit is %X", wbm2spc_nc);
         $display("INFO: WBM2SPC: Thread is %X", wbm2spc_thread);
         $display("INFO: WBM2SPC: Way Valid is %X", wbm2spc_way_valid);
         $display("INFO: WBM2SPC: Replaced L2 Way is %X", wbm2spc_way);
+        $display("INFO: WBM2SPC: Fetch for Boot is %X", wbm2spc_boot_fetch);
+        $display("INFO: WBM2SPC: Atomic LD/ST or 2nd IFill Packet is %X", wbm2spc_atomic);
+        $display("INFO: WBM2SPC: PFL is %X", wbm2spc_pfl); 
         $display("INFO: WBM2SPC: Data is %X", wbm2spc_data);
-        $display("INFO: WBM2SPC: Return Packet forwarded from Wishbone Master to SPARC Core");
 // synopsys translate_on
 
         // Unconditional state change
@@ -553,7 +575,7 @@ module spc2wbm (
         if(wbm_ack_i==1) begin
 
           // Clear previously modified outputs
-          if(spc2wbm_atom==0) wbm_cycle_o = 0;
+          if(spc2wbm_atomic==0) wbm_cycle_o = 0;
           wbm_strobe_o = 0;
           wbm_we_o = 0;
           wbm_addr_o = 64'b0;
@@ -591,7 +613,7 @@ module spc2wbm (
         if(wbm_ack_i==1) begin
 
           // Clear previously modified outputs
-          if(spc2wbm_atom==0) wbm_cycle_o = 0;
+          if(spc2wbm_atomic==0) wbm_cycle_o = 0;
           wbm_strobe_o = 0;
           wbm_we_o = 0;
           wbm_addr_o = 64'b0;
@@ -599,6 +621,7 @@ module spc2wbm (
           wbm_sel_o = 8'b0;
 
           // Latch the data and set up the return packet for the SPARC Core
+          wbm2spc_atomic = 1;
           wbm2spc_data[63:0] = wbm_data_i;
 
           // Jump to next state
@@ -619,6 +642,7 @@ module spc2wbm (
 
 // synopsys translate_off
         // Print details of return packet
+        $display("INFO: WBM2SPC: *** RETURN PACKET TO SPARC CORE ***");	 
         $display("INFO: WBM2SPC: Valid bit is %X", wbm2spc_valid);
         case(wbm2spc_type)
           `IFILL_RET: $display("INFO: WBM2SPC: Return Packet of Type IFILL_RET");
@@ -626,13 +650,16 @@ module spc2wbm (
           `ST_ACK: $display("INFO: WBM2SPC: Return Packet of Type ST_ACK");
           default: $display("INFO: WBM2SPC: Return Packet of Type Unknown");
         endcase
+        $display("INFO: WBM2SPC: L2 Miss is %X", wbm2spc_miss);
         $display("INFO: WBM2SPC: Error is %X", wbm2spc_error);
         $display("INFO: WBM2SPC: Non-Cacheable bit is %X", wbm2spc_nc);
         $display("INFO: WBM2SPC: Thread is %X", wbm2spc_thread);
         $display("INFO: WBM2SPC: Way Valid is %X", wbm2spc_way_valid);
         $display("INFO: WBM2SPC: Replaced L2 Way is %X", wbm2spc_way);
+        $display("INFO: WBM2SPC: Fetch for Boot is %X", wbm2spc_boot_fetch);
+        $display("INFO: WBM2SPC: Atomic LD/ST or 2nd IFill Packet is %X", wbm2spc_atomic);
+        $display("INFO: WBM2SPC: PFL is %X", wbm2spc_pfl); 
         $display("INFO: WBM2SPC: Data is %X", wbm2spc_data);
-        $display("INFO: WBM2SPC: Return Packet forwarded from Wishbone Master to SPARC Core");
 // synopsys translate_on
 
       end
