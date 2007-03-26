@@ -5,8 +5,8 @@ SRC_DIR=$T1_ROOT/design/sys/iop
 DST_DIR=$S1_ROOT/hdl/rtl/sparc_core
 
 # Clean destination directory
-rm -rf $DST_DIR/*
-mkdir $DST_DIR/include
+rm -f $DST_DIR/*.*
+rm -f $DST_DIR/include/*.*
 
 # Copy all the Verilog files of the SPARC Core into destination directory
 cp $SRC_DIR/include/*.h $DST_DIR/include
@@ -44,7 +44,7 @@ mv -f $DST_DIR/sparc_ifu_fcl_TMP.v $DST_DIR/sparc_ifu_fcl.v
 
 # Copy also behavioral libraries used for RTL simulations
 DST_DIR=$S1_ROOT/hdl/behav/sparc_libs
-rm -f $DST_DIR/*
+rm -f $DST_DIR/*.*
 cp $SRC_DIR/../../../lib/m1/m1.behV $DST_DIR/m1_lib.v
 cp $SRC_DIR/../../../lib/u1/u1.behV $DST_DIR/u1_lib.v
 
