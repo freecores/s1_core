@@ -13,6 +13,9 @@ echo $S1_ROOT/hdl/behav/testbench/mem_harness.v >> $FILELIST_ICARUS
 echo $S1_ROOT/hdl/behav/testbench/testbench.v >> $FILELIST_ICARUS
 echo "+incdir+"`find $S1_ROOT/hdl/rtl/sparc_core -name "include"` >> $FILELIST_ICARUS
 echo "+incdir+"$S1_ROOT/hdl/rtl/s1_top >> $FILELIST_ICARUS
+echo "+define+FPGA_SYN" >> $FILELIST_ICARUS
+echo "+define+FPGA_SYN_1THREAD" >> $FILELIST_ICARUS
+echo "+define+FPGA_SYN_NO_SPU" >> $FILELIST_ICARUS
 
 # Create the VCS filelist (for Synopsys simulation)
 rm -f $FILELIST_VCS
@@ -29,6 +32,8 @@ echo $S1_ROOT/hdl/behav/testbench/mem_harness.v >> $FILELIST_VCS
 echo $S1_ROOT/hdl/behav/testbench/testbench.v >> $FILELIST_VCS
 echo "+incdir+"`find $S1_ROOT/hdl/rtl/sparc_core -name "include"` >> $FILELIST_VCS
 echo "+incdir+"$S1_ROOT/hdl/rtl/s1_top >> $FILELIST_VCS
+## TODO
+# please find the proper option for the defines and put them here!!!
 
 # Create the FPGA filelist (for Icarus synthesis)
 rm -f $FILELIST_FPGA
@@ -42,7 +47,8 @@ echo $S1_ROOT/hdl/rtl/s1_top/s1_top.v >> $FILELIST_FPGA
 echo "+incdir+"`find $S1_ROOT/hdl/rtl/sparc_core -name "include"` >> $FILELIST_FPGA
 echo "+incdir+"$S1_ROOT/hdl/rtl/s1_top >> $FILELIST_FPGA
 echo "+define+FPGA_SYN" >> $FILELIST_FPGA
-#echo "+define+DEFINE_0IN" >> $FILELIST_FPGA
+echo "+define+FPGA_SYN_1THREAD" >> $FILELIST_FPGA
+echo "+define+FPGA_SYN_NO_SPU" >> $FILELIST_FPGA
 
 # Create the DC filelist (for Synopsys synthesis)
 rm -f $FILELIST_DC
@@ -53,8 +59,7 @@ echo $S1_ROOT/hdl/rtl/s1_top/rst_ctrl.v >> $FILELIST_DC
 echo $S1_ROOT/hdl/rtl/s1_top/int_ctrl.v >> $FILELIST_DC
 echo $S1_ROOT/hdl/rtl/s1_top/spc2wbm.v >> $FILELIST_DC
 echo $S1_ROOT/hdl/rtl/s1_top/s1_top.v >> $FILELIST_DC
-#sed -e 's/^/analyze \-format verilog -define { FPGA_SYN , DEFINE_0IN } /g' $FILELIST_DC > temp.v
-sed -e 's/^/analyze \-format verilog -define { FPGA_SYN } /g' $FILELIST_DC > temp.v
+sed -e 's/^/analyze \-format verilog -define { FPGA_SYN , FPGA_SYN_1THREAD , FPGA_SYN_NO_SPU } /g' $FILELIST_DC > temp.v
 mv -f temp.v $FILELIST_DC
 cat $S1_ROOT/tools/src/build_dc.cmd >> $FILELIST_DC
 
