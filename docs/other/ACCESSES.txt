@@ -1,3 +1,11 @@
+Simply RISC S1 Core - Boot Code
+===============================
+
+This is the disassembled boot code; the original source code can be
+found inside the official OpenSPARC T1 tarball, in the file:
+$T1_ROOT/verif/diag/assembly/include/hred_reset_handler.s
+
+
 Fetches from SSI OpenBoot PROM (section RED_SEC)
 ================================================
 
