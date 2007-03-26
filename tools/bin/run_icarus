@@ -2,5 +2,4 @@
 
 cd $S1_ROOT/run/sim/icarus
 ln -f -s ../../../tests/boot/mem_*.image .
-./testbench &> sim.log
-
+./testbench 2>&1 | tee sim.log
