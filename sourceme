@@ -1,7 +1,7 @@
 
 # General paths settings
-export S1_ROOT=/usr/design/simplyrisc-s1
-export T1_ROOT=/usr/design/opensparc-t1/current
+export S1_ROOT=~/s1_core
+export T1_ROOT=/usr/design/opensparc-t1
 export PATH=.:$S1_ROOT/tools/bin:$PATH
 
 # Filelist names
