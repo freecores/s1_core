@@ -2,7 +2,6 @@ Simply RISC S1 Core - To Do List
 ================================
 
 This is the list of the higher priority tasks:
-- sim problem: dirty requests after a while
 - synth problem: Icarus assertion failed
 
 Lower priority:
