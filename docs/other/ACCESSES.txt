@@ -45,19 +45,23 @@ Fetches from RAM Bank 3 (section RED_EXT_SEC)
 Fetches from RAM Bank 0 (section RED_EXT_SEC)
 =============================================
 
+*** BEGIN ***
+
+These 8 stores to Interrupt Queue ASI Registers were removed
+to obtain clean waveforms. Further investigation will follow
+when full support for interrupts will be added.
+
 0000040100:	c0 f0 23 c0 	stxa  %g0, [ 0x3c0 ] %asi
 0000040104:	c0 f0 23 c8 	stxa  %g0, [ 0x3c8 ] %asi
 0000040108:	c0 f0 23 d0 	stxa  %g0, [ 0x3d0 ] %asi
 000004010c:	c0 f0 23 d8 	stxa  %g0, [ 0x3d8 ] %asi
 
-*** Here the SPARC Core of the S1 sends a dirty request and hangs ***
-
-*** The following fetches are seen only in the original T1 sims (RAM Bank may vary) ***
-
 0000040110:	c0 f0 23 e0 	stxa  %g0, [ 0x3e0 ] %asi
 0000040114:	c0 f0 23 e8 	stxa  %g0, [ 0x3e8 ] %asi
 0000040118:	c0 f0 23 f0 	stxa  %g0, [ 0x3f0 ] %asi
 000004011c:	c0 f0 23 f8 	stxa  %g0, [ 0x3f8 ] %asi
+
+*** END ***
 
 0000040120:	8f 90 20 00 	wrpr  0, %tl
 0000040124:	a1 90 20 00 	wrpr  0, %gl
