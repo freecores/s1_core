@@ -35,7 +35,8 @@
 * ========== Copyright Header End ============================================
 */
 
-
+#include "defines.h"
+	
 	// Enable L2-ucache: Unused in S1 Core
 /*
 	setx	cregs_l2_ctl_reg_r64, %g1, %l1				// aka "wr  %g0, 5, %asr26" "clr  %l1"
