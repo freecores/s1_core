@@ -9,6 +9,7 @@
 # 1) requires sparc64-linux-gcc (see Download section on srisc.com);
 # 2) the generated image is currently not used by simulations.
 
+# Prepare the environment
 cd $S1_ROOT/tests
 rm -f *.o *~ *.bin *.dump *.hex     # Make clean
 if ( test $# != 1 ) then
@@ -24,11 +25,19 @@ if ( ! test -e $1.c ) then
   exit 1;
 fi
 
-sparc64-linux-g++ -c -O0 $1.c
-sparc64-linux-ld -Ur --script=$S1_ROOT/tools/src/linker.map -EB -o $1.bin $1.o
-sparc64-linux-objdump -d -EB -w -z $1.bin > $1.dump
+# Compile the dumper
 gcc -o $S1_ROOT/tools/bin/dump2hex.bin $S1_ROOT/tools/src/dump2hex.c
-grep "  " $1.dump | egrep -v "file format" | dump2hex.bin > dump/$1_MAIN.image
+
+# Compile the boot code
+sparc64-linux-as -o boot/boot.bin boot/boot.s
+sparc64-linux-objdump -d -EB -w -z boot/boot.bin > boot/boot.dump
+grep "  " boot/boot.dump | egrep -v "file format" | dump2hex.bin > boot/boot.image
+
+# Compile the C test
+#sparc64-linux-g++ -c -O0 $1.c
+#sparc64-linux-ld -Ur --script=$S1_ROOT/tools/src/linker.map -EB -o $1.bin $1.o
+#sparc64-linux-objdump -d -EB -w -z $1.bin > $1.dump
+#grep "  " $1.dump | egrep -v "file format" | dump2hex.bin > dump/$1_MAIN.image
 
 rm -f *.o *~ *.bin *.dump           # Make clean
 
