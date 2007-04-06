@@ -6,7 +6,7 @@
  *   $T1_ROOT/verif/diag/assembly/include/hred_reset_handler.s
  *
  * Main changes:
- * - L2 cache handling commented out since not implemented in S1 Core	;
+ * - L1 and L2 cache handling are not enabled;
  * - Interrupt Queues handling currently commented out since causes troubles in S1 Core.
  *
  * Sun Microsystems' copyright notices follow:
@@ -52,12 +52,13 @@
 	!! Set LSU Diagnostic Register to use all ways for L1-icache and L1-dcache
 	setx	cregs_lsu_diag_reg_r64, %g1, %l1				!! aka "clr  %l1"
 	mov	0x10, %g1
-	stxa	%l1, [%g1] ASI_LSU_DIAG_REG					!! aka "stxa %l1, [%g1] (66)"
+	stxa %l1, [%g1] (66)							!! aka "stxa	%l1, [%g1] ASI_LSU_DIAG_REG"
 
-	!! Set LSU Control Register to enable L1-icache and L1-dcache
+	!! Set LSU Control Register to enable L1-icache and L1-dcache: not enabled in S1 Core
+/*
  	setx	(CREGS_LSU_CTL_REG_IC | (CREGS_LSU_CTL_REG_DC << 1)), %g1, %l1	!! aka "mov  3, %l1"
-	stxa	%l1, [%g0] ASI_LSU_CTL_REG					!! aka "stxa  %l1, [ %g0 ] (69)"
-
+	stxa  %l1, [ %g0 ] (69)							!! aka "stxa	%l1, [%g0] ASI_LSU_CTL_REG"
+*/
 	!! Set hpstate.red = 0 and hpstate.enb = 1
 	rdhpr	%hpstate, %l1 
 	wrhpr	%l1, 0x820, %hpstate
@@ -113,7 +114,7 @@
 
 	!! Enable error trap
 	setx	cregs_sparc_error_en_reg_r64, %g1, %l1			!! aka "mov  3, %l1"
-	stxa	%l1, [%g0] ASI_SPARC_ERROR_EN_REG			!! aka "stxa  %l1, [%g0] (75)"
+	stxa  %l1, [%g0] (75)						!! aka "stxa	%l1, [%g0] ASI_SPARC_ERROR_EN_REG"
 
 	!! Enable L2-ucache error trap:	Unused in S1 Core
 /*
@@ -226,9 +227,13 @@
 	stxa %g0, [%l1] 0x21	
 
 	!! Initialize dtsb entry for i context zero ps0, ps1
+/*
 	!! Set LSU Control Register to enable icache, dcache, immu, dmmu
 	setx	cregs_lsu_ctl_reg_r64, %g1, %l1					!! aka "mov  0xf, %l1"
-	stxa	%l1, [%g0] ASI_LSU_CTL_REG					!! aka "stxa  %l1, [%g0] (69)"
+*/
+	!! Set LSU Control Register to enable immu, dmmu but NOT icache, dcache
+	mov  0xc, %l1
+	stxa  %l1, [%g0] (69)							!! aka "stxa	%l1, [%g0] ASI_LSU_CTL_REG"
 
         setx	HPriv_Reset_Handler, %g1, %g2
 	!! this instructions expands as
