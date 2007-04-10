@@ -63,3 +63,15 @@ sed -e 's/^/analyze \-format verilog -define { FPGA_SYN , FPGA_SYN_1THREAD , FPG
 mv -f temp.v $FILELIST_DC
 cat $S1_ROOT/tools/src/build_dc.cmd >> $FILELIST_DC
 
+# Create the XST filelist (for Xilinx ISE synthesis)
+rm -f $FILELIST_XST
+touch $FILELIST_XST
+find $S1_ROOT/hdl/macrocell/sparc_libs -name "*.v" >> $FILELIST_XST
+find $S1_ROOT/hdl/rtl/sparc_core -name "*.v" >> $FILELIST_XST
+echo $S1_ROOT/hdl/rtl/s1_top/rst_ctrl.v >> $FILELIST_XST
+echo $S1_ROOT/hdl/rtl/s1_top/int_ctrl.v >> $FILELIST_XST
+echo $S1_ROOT/hdl/rtl/s1_top/spc2wbm.v >> $FILELIST_XST
+echo $S1_ROOT/hdl/rtl/s1_top/s1_top.v >> $FILELIST_XST
+sed -e 's/^/verilog work /g' $FILELIST_XST > temp.v
+mv -f temp.v $FILELIST_XST
+
