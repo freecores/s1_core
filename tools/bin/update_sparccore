@@ -29,6 +29,11 @@ for file in $DST_DIR/*.v ; do
   mv -f $DST_DIR/temp.v $file
 done
 
+# Remove L1 Instruction and Data Caches
+cp -f $S1_ROOT/tools/src/bw_r_dcd.v $DST_DIR
+cp -f $S1_ROOT/tools/src/bw_r_icd.v $DST_DIR
+cp -f $S1_ROOT/tools/src/bw_r_idct.v $DST_DIR
+
 # Hack the SPARC Core to add the external stall input from the bridge
 sed -e 's/pcx_spc_grant_px,/pcx_spc_grant_px, wbm_spc_stallreq,/g' $DST_DIR/sparc.v |
   sed -e 's/pcx_spc_grant_px;/pcx_spc_grant_px; input wbm_spc_stallreq;/g' |
