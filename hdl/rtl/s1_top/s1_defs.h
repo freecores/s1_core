@@ -20,6 +20,10 @@
 `include "t1_defs.h"
 `timescale 1ns/100ps
 
+`define FPGA_SYN
+`define FPGA_SYN_1THREAD
+`define FPGA_SYN_NO_SPU
+
 // Size of the buses
 `define WB_ADDR_WIDTH 64
 `define WB_DATA_WIDTH 64
