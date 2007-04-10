@@ -5,11 +5,18 @@ export T1_ROOT=/usr/design/opensparc-t1
 export PATH=.:$S1_ROOT/tools/bin:$PATH
 
 # Filelist names
-export FILELIST_VCS=$S1_ROOT/hdl/filelist.vcs
 export FILELIST_ICARUS=$S1_ROOT/hdl/filelist.icarus
-export FILELIST_DC=$S1_ROOT/hdl/filelist.dc
+export FILELIST_VCS=$S1_ROOT/hdl/filelist.vcs
 export FILELIST_FPGA=$S1_ROOT/hdl/filelist.fpga
+export FILELIST_DC=$S1_ROOT/hdl/filelist.dc
+export FILELIST_XST=$S1_ROOT/hdl/filelist.xst
 
 # Alias to quickly "Change Directory to Design"...
 alias cdd='cd $S1_ROOT'
+
+# Reminder for enviroment variables
+echo ">>>> Welcome to Simply RISC S1 Core environment!!! <<<<"
+echo "If you make use of Icarus Verilog you are ready to start;"
+echo "for the other tools please set the environment variables"
+echo "properly and ensure that you run 'update_filelist' first."
 
