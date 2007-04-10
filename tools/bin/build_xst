@@ -1,0 +1,16 @@
+#!/bin/bash
+
+cd $S1_ROOT/run/synth/xst
+rm -rf *  # Make clean
+xst -ifn $S1_ROOT/tools/src/build_xst.cmd -ofn synth.log
+
+#export TOP_LEVEL="s1_top"
+#ngdbuild ${TOP_LEVEL}
+#map -o ${TOP_LEVEL}_map.ncd ${TOP_LEVEL}
+#par -w -ol high ${TOP_LEVEL}_map.ncd ${TOP_LEVEL}.ncd
+#bitgen -g startupclk:Cclk -w ${TOP_LEVEL} ${TOP_LEVEL}.bit
+#trce ${TOP_LEVEL} ${TOP_LEVEL}_map
+
+
+
+
