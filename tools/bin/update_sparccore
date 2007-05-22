@@ -1,5 +1,20 @@
 #!/bin/bash
 
+# Check command line parameter
+if ( (test $# != 1) || ((test $1 != "-me") && (test $1 != "-se") && (test $1 != "-ee")) ) then
+  echo "update_sparccore - Script to update SPARC Core sources from a fresh OpenSPARC installation";
+  echo "(C) 2007 by Simply RISC";
+  echo "Usage:";
+  echo "      update_sparccore {-me|-se|-ee}";
+  echo "where parameter refers to the S1 Core version you want to obtain in your environment:";
+  echo "      -me : S1 Core Memory-less Edition (single-thread, no L1 caches)";
+  echo "      -se : S1 Core Single-thread Edition (single-thread, normal 16K+8K caches)";
+  echo "      -ee : S1 Core Elite Edition (four threads support, normal 16K+8K caches)";
+  echo "NOTE: To run this script you MUST have the OpenSPARC T1 environment unpacked";
+  echo "      and the T1_ROOT variable properly set in your S1_ROOT/sourceme file.";
+  exit 1;
+fi
+
 # Set source and destination directories
 SRC_DIR=$T1_ROOT/design/sys/iop
 DST_DIR=$S1_ROOT/hdl/rtl/sparc_core
@@ -40,16 +55,21 @@ rm bw_r_l2t.v bw_r_cm16x40.v bw_r_cm16x40b.v bw_r_dcm.v bw_r_efa.v bw_r_l2d.v bw
 # Clean the files by substituting the $error System Task and applying defines with Icarus preprocessor
 for file in $DST_DIR/*.v ; do
   sed -e 's/\$error/\$display/g' $file | sed -e 's/negedge rclk or rst_l/negedge rclk/g' > $DST_DIR/temp.v
-  iverilog -E -D FPGA_SYN -D FPGA_SYN_1THREAD -D FPGA_SYN_NO_SPU -I $DST_DIR/include -o$file $DST_DIR/temp.v
-#  vpp +include+$DST_DIR/include -D FPGA_SYN -D FPGA_SYN_1THREAD -D FPGA_SYN_NO_SPU $DST_DIR/temp.v > $file
+  if(test $1 == "-me" || test $1 == "-se") then
+    iverilog -E -D FPGA_SYN -D FPGA_SYN_1THREAD -D FPGA_SYN_NO_SPU -I $DST_DIR/include -o$file $DST_DIR/temp.v
+  else
+    iverilog -E -D FPGA_SYN -D FPGA_SYN_NO_SPU -I $DST_DIR/include -o$file $DST_DIR/temp.v
+  fi
   sed -e 's/\* ========== Copyright Header Begin/\/\* ========== Copyright Header Begin/g' $file | sed -e 's/if (\$time > (4\* ))/if(\$time>2)/g' > $DST_DIR/temp.v
   mv -f $DST_DIR/temp.v $file
 done
 
 # Disable L1 Instruction and Data Caches
-cp -f $S1_ROOT/tools/src/bw_r_dcd.v $DST_DIR
-cp -f $S1_ROOT/tools/src/bw_r_icd.v $DST_DIR
-cp -f $S1_ROOT/tools/src/bw_r_idct.v $DST_DIR
+if(test $1 == "-me") then
+  cp -f $S1_ROOT/tools/src/bw_r_dcd.v $DST_DIR
+  cp -f $S1_ROOT/tools/src/bw_r_icd.v $DST_DIR
+  cp -f $S1_ROOT/tools/src/bw_r_idct.v $DST_DIR
+fi
 
 # Hack the SPARC Core to add the external stall input from the bridge
 sed -e 's/pcx_spc_grant_px,/pcx_spc_grant_px, wbm_spc_stallreq,/g' $DST_DIR/sparc.v |
