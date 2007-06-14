@@ -175,36 +175,41 @@ module spc2wbm (
     if(sys_reset_i==1) begin
 
       // Clear outputs going to SPARC Core inputs
-      spc_grant_o = 5'b00000;
-      spc_ready_o = 0;
-      spc_packetin_o = 0;
-      spc_stallreq_o = 0;
+      spc_grant_o <= 5'b00000;
+      spc_ready_o <= 0;
+      spc_packetin_o <= 0;
+      spc_stallreq_o <= 0;
 
       // Clear Wishbone Master interface outputs
-      wbm_cycle_o = 0;
-      wbm_strobe_o = 0;
-      wbm_we_o = 0;
-      wbm_addr_o = 64'b0;
-      wbm_data_o = 64'b0;
-      wbm_sel_o = 8'b0;
+      wbm_cycle_o <= 0;
+      wbm_strobe_o <= 0;
+      wbm_we_o <= 0;
+      wbm_addr_o <= 64'b0;
+      wbm_data_o <= 64'b0;
+      wbm_sel_o <= 8'b0;
 
       // Prepare wakeup packet for SPARC Core, the resulting output is
-      // spc_packetin_o = `CPX_WIDTH'h1700000000000000000000000000000010001;
-      wbm2spc_valid = 1;
-      wbm2spc_type = `INT_RET;
-      wbm2spc_miss = 0;
-      wbm2spc_error = 0;
-      wbm2spc_nc = 0;
-      wbm2spc_thread = 0;
-      wbm2spc_way_valid = 0;
-      wbm2spc_way = 0;
-      wbm2spc_boot_fetch = 0;
-      wbm2spc_atomic = 0;
-      wbm2spc_pfl = 0;
-      wbm2spc_data = 64'h10001;
+      // spc_packetin_o <= `CPX_WIDTH'h1700000000000000000000000000000010001;
+      wbm2spc_valid <= 1;
+      wbm2spc_type <= `INT_RET;
+      wbm2spc_miss <= 0;
+      wbm2spc_error <= 0;
+      wbm2spc_nc <= 0;
+      wbm2spc_thread <= 0;
+      wbm2spc_way_valid <= 0;
+      wbm2spc_way <= 0;
+      wbm2spc_boot_fetch <= 0;
+      wbm2spc_atomic <= 0;
+      wbm2spc_pfl <= 0;
+      wbm2spc_data <= 64'h10001;
+
+      // EDIT vvvv (uinitialized variables)
+      wbm2spc_interrupt_source <= 7'h0;
+      wbm2spc_interrupt_new <= 1'b0;
+      // EDIT ^^^^
 
       // Clear state machine
-      state = `STATE_WAKEUP;
+      state <= `STATE_WAKEUP;
 
     end else begin
 
@@ -213,17 +218,19 @@ module spc2wbm (
       if(state==`STATE_WAKEUP) begin
 
         // Send wakeup packet
-        spc_ready_o = 1;
-        spc_packetin_o = wbm2spc_packet;
+        spc_ready_o <= 1;
+        spc_packetin_o <= wbm2spc_packet;
 
 // synopsys translate_off
         // Display comment
+`ifdef DEBUG
         $display("INFO: SPC2WBM: SPARC Core to Wishbone Master bridge starting...");
         $display("INFO: SPC2WBM: Wakeup packet sent to SPARC Core");
+`endif
 // synopsys translate_on
 
         // Unconditional state change
-        state = `STATE_IDLE;
+        state <= `STATE_IDLE;
 
       // FSM State 1: STATE_IDLE
       // Wait for a request from the SPARC Core
@@ -234,67 +241,67 @@ module spc2wbm (
         if(spc2wbm_req==1) begin
 
           // Clear previously modified outputs
-          spc_ready_o = 0;
-          spc_packetin_o = 0;
+          spc_ready_o <= 0;
+          spc_packetin_o <= 0;
 
           // Stall other requests from the SPARC Core
-          spc_stallreq_o = 1;
+          spc_stallreq_o <= 1;
 
           // Latch target region and atomicity
-          spc2wbm_region = spc_req_i;
-          spc2wbm_atomic = spc_atom_i;
+          spc2wbm_region <= spc_req_i;
+          spc2wbm_atomic <= spc_atom_i;
 
           // Jump to next state
-          state = `STATE_REQUEST_LATCHED;
+          state <= `STATE_REQUEST_LATCHED;
 
         // See if the interrupt vector has changed
         end else if(sys_interrupt_source_i!=wbm2spc_interrupt_source) begin
 
           // Set the flag for next cycle
-          wbm2spc_interrupt_new = 1;
+          wbm2spc_interrupt_new <= 1;
 
           // Prepare the interrupt packet for the SPARC Core
-          wbm2spc_valid = 1;
-          wbm2spc_type = `INT_RET;
-          wbm2spc_miss = 0;
-          wbm2spc_error = 0;
-          wbm2spc_nc = 0;
-          wbm2spc_thread = 0;
-          wbm2spc_way_valid = 0;
-          wbm2spc_way = 0;
-          wbm2spc_boot_fetch = 0;
-          wbm2spc_atomic = 0;
-          wbm2spc_pfl = 0;	   
+          wbm2spc_valid <= 1;
+          wbm2spc_type <= `INT_RET;
+          wbm2spc_miss <= 0;
+          wbm2spc_error <= 0;
+          wbm2spc_nc <= 0;
+          wbm2spc_thread <= 0;
+          wbm2spc_way_valid <= 0;
+          wbm2spc_way <= 0;
+          wbm2spc_boot_fetch <= 0;
+          wbm2spc_atomic <= 0;
+          wbm2spc_pfl <= 0;	   
 
           // Stall other requests from the SPARC Core
-          spc_stallreq_o = 1;
+          spc_stallreq_o <= 1;
 
         // Next cycle see if there's an int to be forwarded to the Core
         end else if(wbm2spc_interrupt_source!=6'b000000 && wbm2spc_interrupt_new) begin
 
           // Clean the flag
-          wbm2spc_interrupt_new = 0;
+          wbm2spc_interrupt_new <= 0;
 
           // Send the interrupt packet to the Core
-          spc_ready_o = 1;
-          spc_packetin_o = wbm2spc_packet;
+          spc_ready_o <= 1;
+          spc_packetin_o <= wbm2spc_packet;
 
           // Stall other requests from the SPARC Core
-          spc_stallreq_o = 1;
+          spc_stallreq_o <= 1;
 
           // Stay in this state
-          state = `STATE_IDLE;
+          state <= `STATE_IDLE;
 
         // Nothing to do, stay idle
         end else begin
 
           // Clear previously modified outputs
-          spc_ready_o = 0;
-          spc_packetin_o = 0;
-          spc_stallreq_o = 0;
+          spc_ready_o <= 0;
+          spc_packetin_o <= 0;
+          spc_stallreq_o <= 0;
 
           // Stay in this state
-          state = `STATE_IDLE;
+          state <= `STATE_IDLE;
 
         end
 
@@ -305,13 +312,14 @@ module spc2wbm (
       end else if(state==`STATE_REQUEST_LATCHED) begin
 
         // Latch the incoming packet
-        spc2wbm_packet = spc_packetout_i;
+        spc2wbm_packet <= spc_packetout_i;
 
         // Grant the request to the SPARC Core
-        spc_grant_o = spc2wbm_region;
+        spc_grant_o <= spc2wbm_region;
 
 // synopsys translate_off
         // Print details of SPARC Core request
+`ifdef DEBUG
         $display("INFO: SPC2WBM: *** NEW REQUEST FROM SPARC CORE ***");
         if(spc2wbm_region[0]==1) $display("INFO: SPC2WBM: Request to RAM Bank 0");
         else if(spc2wbm_region[1]==1) $display("INFO: SPC2WBM: Request to RAM Bank 1");
@@ -321,10 +329,11 @@ module spc2wbm (
         else $display("INFO: SPC2WBM: Request to target region unknown");
         if(spc2wbm_atomic==1) $display("INFO: SPC2WBM: Request is ATOMIC");
         else $display("INFO: SPC2WBM: Request is not atomic");
+`endif
 // synopsys translate_on
 
         // Unconditional state change
-        state = `STATE_PACKET_LATCHED;
+        state <= `STATE_PACKET_LATCHED;
 
       // FSM State 3: STATE_PACKET_LATCHED
       // The packet has already been latched
@@ -333,61 +342,62 @@ module spc2wbm (
       end else if(state==`STATE_PACKET_LATCHED) begin
 
         // Clear previously modified outputs
-        spc_grant_o = 5'b0;
+        spc_grant_o <= 5'b0;
 
         // Issue a request on the Wishbone bus
-        wbm_cycle_o = 1;
-        wbm_strobe_o = 1;
-        wbm_addr_o = { spc2wbm_region, 19'b0, spc2wbm_addr[`PCX_AD_HI-`PCX_AD_LO:3], 3'b000 };
-        wbm_data_o = spc2wbm_data;
+        wbm_cycle_o <= 1;
+        wbm_strobe_o <= 1;
+        wbm_addr_o <= { spc2wbm_region, 19'b0, spc2wbm_addr[`PCX_AD_HI-`PCX_AD_LO:3], 3'b000 };
+        wbm_data_o <= spc2wbm_data;
 
         // Handle write enable and byte select
         if(spc2wbm_type==`IMISS_RQ) begin
 
           // For instruction miss always read memory
-          wbm_we_o = 0;
+          wbm_we_o <= 0;
           if(spc2wbm_region==5'b10000)
             // For accesses to SSI ROM only 32 bits are required
-            wbm_sel_o = (4'b1111<<(spc2wbm_addr[2]<<2));
+            wbm_sel_o <= (4'b1111<<(spc2wbm_addr[2]<<2));
           else
             // For accesses to RAM 256 bits are expected (2 ret packets)
-            wbm_sel_o = 8'b11111111;
+            wbm_sel_o <= 8'b11111111;
 
         end else if(spc2wbm_type==`LOAD_RQ) begin
 	   
           // For data load use the provided data
-          wbm_we_o = 0;
+          wbm_we_o <= 0;
           case(spc2wbm_size)
-            `PCX_SZ_1B: wbm_sel_o = (1'b1<<spc2wbm_addr[2:0]);
-            `PCX_SZ_2B: wbm_sel_o = (2'b11<<(spc2wbm_addr[2:1]<<1));
-            `PCX_SZ_4B: wbm_sel_o = (4'b1111<<(spc2wbm_addr[2]<<2));
-            `PCX_SZ_8B: wbm_sel_o = 8'b11111111;
-            `PCX_SZ_16B: wbm_sel_o = 8'b11111111;  // Requires a 2nd access
-            default: wbm_sel_o = 8'b00000000;
+            `PCX_SZ_1B: wbm_sel_o <= (1'b1<<spc2wbm_addr[2:0]);
+            `PCX_SZ_2B: wbm_sel_o <= (2'b11<<(spc2wbm_addr[2:1]<<1));
+            `PCX_SZ_4B: wbm_sel_o <= (4'b1111<<(spc2wbm_addr[2]<<2));
+            `PCX_SZ_8B: wbm_sel_o <= 8'b11111111;
+            `PCX_SZ_16B: wbm_sel_o <= 8'b11111111;  // Requires a 2nd access
+            default: wbm_sel_o <= 8'b00000000;
           endcase
 
         end else if(spc2wbm_type==`STORE_RQ) begin
 
           // For data store use the provided data
-          wbm_we_o = 1;
+          wbm_we_o <= 1;
           case(spc2wbm_size)
-            `PCX_SZ_1B: wbm_sel_o = (1'b1<<spc2wbm_addr[2:0]);
-            `PCX_SZ_2B: wbm_sel_o = (2'b11<<(spc2wbm_addr[2:1]<<1));
-            `PCX_SZ_4B: wbm_sel_o = (4'b1111<<(spc2wbm_addr[2]<<2));
-            `PCX_SZ_8B: wbm_sel_o = 8'b11111111;
-            `PCX_SZ_16B: wbm_sel_o = 8'b11111111;  // Requires a 2nd access
-            default: wbm_sel_o = 8'b00000000;
+            `PCX_SZ_1B: wbm_sel_o <= (1'b1<<spc2wbm_addr[2:0]);
+            `PCX_SZ_2B: wbm_sel_o <= (2'b11<<(spc2wbm_addr[2:1]<<1));
+            `PCX_SZ_4B: wbm_sel_o <= (4'b1111<<(spc2wbm_addr[2]<<2));
+            `PCX_SZ_8B: wbm_sel_o <= 8'b11111111;
+            `PCX_SZ_16B: wbm_sel_o <= 8'b11111111;  // Requires a 2nd access
+            default: wbm_sel_o <= 8'b00000000;
           endcase
 
         end else begin
 
-          wbm_we_o = 1;
-          wbm_sel_o = 8'b00000000;
+          wbm_we_o <= 1;
+          wbm_sel_o <= 8'b00000000;
 
         end
 
 // synopsys translate_off
         // Print details of request packet
+`ifdef DEBUG
         $display("INFO: SPC2WBM: Valid bit is %X", spc2wbm_valid);
         case(spc2wbm_type)
           `LOAD_RQ: $display("INFO: SPC2WBM: Request of Type LOAD_RQ");
@@ -420,10 +430,11 @@ module spc2wbm (
         endcase
         $display("INFO: SPC2WBM: Address is %X", spc2wbm_addr);
         $display("INFO: SPC2WBM: Data is %X", spc2wbm_data);
+`endif
 // synopsys translate_on
 
         // Unconditional state change
-        state = `STATE_REQUEST_GRANTED;
+        state <= `STATE_REQUEST_GRANTED;
 
       // FSM State 4: STATE_REQUEST_GRANTED
       // Wishbone access completed, latch the incoming data
@@ -433,40 +444,40 @@ module spc2wbm (
         if(wbm_ack_i==1) begin
 
           // Clear previously modified outputs
-          if(spc2wbm_atomic==0) wbm_cycle_o = 0;
-          wbm_strobe_o = 0;
-          wbm_we_o = 0;
-          wbm_addr_o = 64'b0;
-          wbm_data_o = 64'b0;
-          wbm_sel_o = 8'b0;
+          if(spc2wbm_atomic==0) wbm_cycle_o <= 0;
+          wbm_strobe_o <= 0;
+          wbm_we_o <= 0;
+          wbm_addr_o <= 64'b0;
+          wbm_data_o <= 64'b0;
+          wbm_sel_o <= 8'b0;
 
           // Latch the data and set up the return packet for the SPARC Core
-          wbm2spc_valid = 1;
+          wbm2spc_valid <= 1;
           case(spc2wbm_type)
             `IMISS_RQ: begin
-              wbm2spc_type = `IFILL_RET; // I-Cache Miss
-              wbm2spc_atomic = 0;
+              wbm2spc_type <= `IFILL_RET; // I-Cache Miss
+              wbm2spc_atomic <= 0;
             end
             `LOAD_RQ: begin
-              wbm2spc_type = `LOAD_RET;  // Load
-              wbm2spc_atomic = spc2wbm_atomic;
+              wbm2spc_type <= `LOAD_RET;  // Load
+              wbm2spc_atomic <= spc2wbm_atomic;
             end
             `STORE_RQ: begin
-              wbm2spc_type = `ST_ACK;    // Store
-              wbm2spc_atomic = spc2wbm_atomic;
+              wbm2spc_type <= `ST_ACK;    // Store
+              wbm2spc_atomic <= spc2wbm_atomic;
             end
           endcase
-          wbm2spc_miss = 0;
-          wbm2spc_error = 0;
-          wbm2spc_nc = spc2wbm_nc;
-          wbm2spc_thread = spc2wbm_thread;
-          wbm2spc_way_valid = 0;
-          wbm2spc_way = 0;
-	  if(spc2wbm_region==5'b10000) wbm2spc_boot_fetch = 1;
-	  else wbm2spc_boot_fetch = 0;
-          wbm2spc_pfl = 0;	   
-          if(spc2wbm_addr[3]==0) wbm2spc_data = { wbm_data_i, 64'b0 };
-          else wbm2spc_data = { 64'b0, wbm_data_i };
+          wbm2spc_miss <= 0;
+          wbm2spc_error <= 0;
+          wbm2spc_nc <= spc2wbm_nc;
+          wbm2spc_thread <= spc2wbm_thread;
+          wbm2spc_way_valid <= 0;
+          wbm2spc_way <= 0;
+	  if(spc2wbm_region==5'b10000) wbm2spc_boot_fetch <= 1;
+	  else wbm2spc_boot_fetch <= 0;
+          wbm2spc_pfl <= 0;	   
+          if(spc2wbm_addr[3]==0) wbm2spc_data <= { wbm_data_i, 64'b0 };
+          else wbm2spc_data <= { 64'b0, wbm_data_i };
 
           // See if other 64-bit Wishbone accesses are required
           if(
@@ -475,26 +486,26 @@ module spc2wbm (
               // Data access of 128 bits
               ( (spc2wbm_type==`LOAD_RQ)&&(spc2wbm_size==`PCX_SZ_16B) )
             )
-            state = `STATE_ACCESS2_BEGIN;
+            state <= `STATE_ACCESS2_BEGIN;
           else
-            state = `STATE_PACKET_READY;
+            state <= `STATE_PACKET_READY;
 
-        end else state = `STATE_REQUEST_GRANTED;
+        end else state <= `STATE_REQUEST_GRANTED;
 
       // FSM State 5: STATE_ACCESS2_BEGIN
       // If needed start a second read access to the Wishbone bus
       end else if(state==`STATE_ACCESS2_BEGIN) begin
 
         // Issue a second request on the Wishbone bus
-        wbm_cycle_o = 1;
-        wbm_strobe_o = 1;
-        wbm_we_o = 0;
-        wbm_addr_o = { spc2wbm_region, 19'b0, spc2wbm_addr[`PCX_AD_HI-`PCX_AD_LO:4], 4'b1000 };  // 2nd doubleword inside the same quadword
-        wbm_data_o = 64'b0;
-        wbm_sel_o = 8'b11111111;
+        wbm_cycle_o <= 1;
+        wbm_strobe_o <= 1;
+        wbm_we_o <= 0;
+        wbm_addr_o <= { spc2wbm_region, 19'b0, spc2wbm_addr[`PCX_AD_HI-`PCX_AD_LO:4], 4'b1000 };  // 2nd doubleword inside the same quadword
+        wbm_data_o <= 64'b0;
+        wbm_sel_o <= 8'b11111111;
 
         // Unconditional state change
-        state = `STATE_ACCESS2_END;
+        state <= `STATE_ACCESS2_END;
 
       // FSM State 6: STATE_ACCESS2_END
       // Latch the second data returning from Wishbone when ready
@@ -504,23 +515,23 @@ module spc2wbm (
         if(wbm_ack_i==1) begin
 
           // Clear previously modified outputs
-          if(spc2wbm_atomic==0) wbm_cycle_o = 0;
-          wbm_strobe_o = 0;
-          wbm_we_o = 0;
-          wbm_addr_o = 64'b0;
-          wbm_data_o = 64'b0;
-          wbm_sel_o = 8'b0;
+          if(spc2wbm_atomic==0) wbm_cycle_o <= 0;
+          wbm_strobe_o <= 0;
+          wbm_we_o <= 0;
+          wbm_addr_o <= 64'b0;
+          wbm_data_o <= 64'b0;
+          wbm_sel_o <= 8'b0;
 
           // Latch the data and set up the return packet for the SPARC Core
-          wbm2spc_data[63:0] = wbm_data_i;
+          wbm2spc_data[63:0] <= wbm_data_i;
 
           // See if two return packets are required or just one
           if(spc2wbm_type==`IMISS_RQ && spc2wbm_region==5'b10000)
-            state = `STATE_PACKET_READY;
+            state <= `STATE_PACKET_READY;
           else
-            state = `STATE_ACCESS3_BEGIN;
+            state <= `STATE_ACCESS3_BEGIN;
 
-        end else state = `STATE_ACCESS2_END;
+        end else state <= `STATE_ACCESS2_END;
 
       // FSM State 7: STATE_ACCESS3_BEGIN
       // If needed start a third read access to the Wishbone bus
@@ -528,19 +539,20 @@ module spc2wbm (
       end else if(state==`STATE_ACCESS3_BEGIN) begin
 
         // Return the packet to the SPARC Core
-        spc_ready_o = 1;
-        spc_packetin_o = wbm2spc_packet;
+        spc_ready_o <= 1;
+        spc_packetin_o <= wbm2spc_packet;
 
         // Issue a third request on the Wishbone bus
-        wbm_cycle_o = 1;
-        wbm_strobe_o = 1;
-        wbm_we_o = 0;
-        wbm_addr_o = { spc2wbm_region, 19'b0, spc2wbm_addr[`PCX_AD_HI-`PCX_AD_LO:5], 5'b10000 };  // 3nd doubleword inside the same 256-bit data
-        wbm_data_o = 64'b0;
-        wbm_sel_o = 8'b11111111;
+        wbm_cycle_o <= 1;
+        wbm_strobe_o <= 1;
+        wbm_we_o <= 0;
+        wbm_addr_o <= { spc2wbm_region, 19'b0, spc2wbm_addr[`PCX_AD_HI-`PCX_AD_LO:5], 5'b10000 };  // 3nd doubleword inside the same 256-bit data
+        wbm_data_o <= 64'b0;
+        wbm_sel_o <= 8'b11111111;
 
 // synopsys translate_off
         // Print details of return packet
+`ifdef DEBUG
         $display("INFO: WBM2SPC: *** RETURN PACKET TO SPARC CORE ***");	 
         $display("INFO: WBM2SPC: Valid bit is %X", wbm2spc_valid);
         case(wbm2spc_type)
@@ -559,51 +571,52 @@ module spc2wbm (
         $display("INFO: WBM2SPC: Atomic LD/ST or 2nd IFill Packet is %X", wbm2spc_atomic);
         $display("INFO: WBM2SPC: PFL is %X", wbm2spc_pfl); 
         $display("INFO: WBM2SPC: Data is %X", wbm2spc_data);
+`endif
 // synopsys translate_on
 
         // Unconditional state change
-        state = `STATE_ACCESS3_END;
+        state <= `STATE_ACCESS3_END;
 
       // FSM State 8: STATE_ACCESS3_END
       // Latch the second data returning from Wishbone when ready
       end else if(state==`STATE_ACCESS3_END) begin
 
         // Clear previously modified outputs
-        spc_ready_o = 0;
+        spc_ready_o <= 0;
 
         // Wait until Wishbone access completes
         if(wbm_ack_i==1) begin
 
           // Clear previously modified outputs
-          if(spc2wbm_atomic==0) wbm_cycle_o = 0;
-          wbm_strobe_o = 0;
-          wbm_we_o = 0;
-          wbm_addr_o = 64'b0;
-          wbm_data_o = 64'b0;
-          wbm_sel_o = 8'b0;
+          if(spc2wbm_atomic==0) wbm_cycle_o <= 0;
+          wbm_strobe_o <= 0;
+          wbm_we_o <= 0;
+          wbm_addr_o <= 64'b0;
+          wbm_data_o <= 64'b0;
+          wbm_sel_o <= 8'b0;
 
           // Latch the data and set up the return packet for the SPARC Core
-          wbm2spc_data = { wbm_data_i, 64'b0 };
+          wbm2spc_data <= { wbm_data_i, 64'b0 };
 
           // Jump to next state
-          state = `STATE_ACCESS4_BEGIN;
+          state <= `STATE_ACCESS4_BEGIN;
 
-        end else state = `STATE_ACCESS3_END;
+        end else state <= `STATE_ACCESS3_END;
 
       // FSM State 9: STATE_ACCESS4_BEGIN
       // If needed start a second read access to the Wishbone bus
       end else if(state==`STATE_ACCESS4_BEGIN) begin
 
         // Issue a fourth request on the Wishbone bus
-        wbm_cycle_o = 1;
-        wbm_strobe_o = 1;
-        wbm_we_o = 0;
-        wbm_addr_o = { spc2wbm_region, 19'b0, spc2wbm_addr[`PCX_AD_HI-`PCX_AD_LO:5], 5'b11000 };  // 4th doubleword inside the same 256-bit data
-        wbm_data_o = 64'b0;
-        wbm_sel_o = 8'b11111111;
+        wbm_cycle_o <= 1;
+        wbm_strobe_o <= 1;
+        wbm_we_o <= 0;
+        wbm_addr_o <= { spc2wbm_region, 19'b0, spc2wbm_addr[`PCX_AD_HI-`PCX_AD_LO:5], 5'b11000 };  // 4th doubleword inside the same 256-bit data
+        wbm_data_o <= 64'b0;
+        wbm_sel_o <= 8'b11111111;
 
         // Unconditional state change
-        state = `STATE_ACCESS4_END;
+        state <= `STATE_ACCESS4_END;
 
       // FSM State 10: STATE_ACCESS4_END
       // Latch the second data returning from Wishbone when ready
@@ -613,35 +626,36 @@ module spc2wbm (
         if(wbm_ack_i==1) begin
 
           // Clear previously modified outputs
-          if(spc2wbm_atomic==0) wbm_cycle_o = 0;
-          wbm_strobe_o = 0;
-          wbm_we_o = 0;
-          wbm_addr_o = 64'b0;
-          wbm_data_o = 64'b0;
-          wbm_sel_o = 8'b0;
+          if(spc2wbm_atomic==0) wbm_cycle_o <= 0;
+          wbm_strobe_o <= 0;
+          wbm_we_o <= 0;
+          wbm_addr_o <= 64'b0;
+          wbm_data_o <= 64'b0;
+          wbm_sel_o <= 8'b0;
 
           // Latch the data and set up the return packet for the SPARC Core
-          wbm2spc_atomic = 1;
-          wbm2spc_data[63:0] = wbm_data_i;
+          wbm2spc_atomic <= 1;
+          wbm2spc_data[63:0] <= wbm_data_i;
 
           // Jump to next state
-          state = `STATE_PACKET_READY;
+          state <= `STATE_PACKET_READY;
 
-        end else state = `STATE_ACCESS4_END;
+        end else state <= `STATE_ACCESS4_END;
 
       // FSM State 11: STATE_PACKET_READY
       // We can start returning the packet to the SPARC Core
       end else if(state==`STATE_PACKET_READY) begin
 
         // Return the packet to the SPARC Core
-        spc_ready_o = 1;
-        spc_packetin_o = wbm2spc_packet;
+        spc_ready_o <= 1;
+        spc_packetin_o <= wbm2spc_packet;
 
         // Unconditional state change
-        state = `STATE_IDLE;
+        state <= `STATE_IDLE;
 
 // synopsys translate_off
         // Print details of return packet
+`ifdef DEBUG
         $display("INFO: WBM2SPC: *** RETURN PACKET TO SPARC CORE ***");	 
         $display("INFO: WBM2SPC: Valid bit is %X", wbm2spc_valid);
         case(wbm2spc_type)
@@ -660,6 +674,7 @@ module spc2wbm (
         $display("INFO: WBM2SPC: Atomic LD/ST or 2nd IFill Packet is %X", wbm2spc_atomic);
         $display("INFO: WBM2SPC: PFL is %X", wbm2spc_pfl); 
         $display("INFO: WBM2SPC: Data is %X", wbm2spc_data);
+`endif
 // synopsys translate_on
 
       end
