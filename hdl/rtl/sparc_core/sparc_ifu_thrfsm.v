@@ -355,7 +355,11 @@ module sparc_ifu_thrfsm(/*AUTOARG*/
 		     // 0in <fire -message "thrfsm.v: Error! Invalid State"
 
            
-	             $display("ILLEGAL_THR_STATE", "thrfsm.v: Error! Invalid State %b\n", thr_state);
+		
+
+
+	             //$display("ILLEGAL_THR_STATE", "thrfsm.v: Error! Invalid State %b\n", thr_state);
+				 
 		     
                // synopsys translate_on
 	             if (rst_thread)

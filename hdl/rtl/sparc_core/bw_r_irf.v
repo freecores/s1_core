@@ -138,6 +138,15 @@ module bw_r_irf (/*AUTOARG*/
              new_agp_d1,
              new_agp_d2;
 
+
+
+
+
+
+
+
+
+
    reg [71:0] active_win_thr_rd_w_neg;
    reg [71:0] active_win_thr_rd_w2_neg;
    reg [6:0]  thr_rd_w_neg;
@@ -145,6 +154,7 @@ module bw_r_irf (/*AUTOARG*/
    reg        active_win_thr_rd_w_neg_wr_en;
    reg        active_win_thr_rd_w2_neg_wr_en;
    reg        rst_tri_en_neg;
+
    
    wire          se;
    wire          clk;
@@ -219,6 +229,16 @@ module bw_r_irf (/*AUTOARG*/
 ////////////////////////////////////////////////////////////////
    // This is a latch that works if both wen is high and clk is low
 
+
+
+
+
+
+
+
+
+
+
    always @(negedge clk) begin
       rst_tri_en_neg <= rst_tri_en;
       // write conflict results in X written to destination
@@ -248,6 +268,8 @@ module bw_r_irf (/*AUTOARG*/
            active_win_thr_rd_w2_neg_wr_en <= 1'b0;
       end
    end
+
+
    
 
 
@@ -507,7 +529,7 @@ end
    //reg [71:0]    active_window [127:0];// 32x4 72 bit registers
 
 	always @(negedge clk) 
-	  if(ifu_exu_ren1_d)
+	  if(ifu_exu_ren1_d) //comes from a posedge clk
 	  case(thr_rs1[4:0])
 	    5'b00000: irf_byp_rs1_data_d <= rd_data00;
 	    5'b00001: irf_byp_rs1_data_d <= rd_data01;

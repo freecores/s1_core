@@ -297,6 +297,7 @@ bw_r_rf16x2 arr0 (
 	.wr_data(wrdata_d1[  7:  0]),
 	.rd_data(dout[  7:  0]),
 	.clk(wr_clk),
+	.rd_clk(rd_clk),
 	.reset_l(reset_l));
 
 bw_r_rf16x2 arr1 (
@@ -308,6 +309,7 @@ bw_r_rf16x2 arr1 (
 	.wr_data(wrdata_d1[ 15:  8]),
 	.rd_data(dout[ 15:  8]),
 	.clk(wr_clk),
+	.rd_clk(rd_clk),
 	.reset_l(reset_l));
 
 bw_r_rf16x2 arr2 (
@@ -319,6 +321,7 @@ bw_r_rf16x2 arr2 (
 	.wr_data(wrdata_d1[ 23: 16]),
 	.rd_data(dout[ 23: 16]),
 	.clk(wr_clk),
+	.rd_clk(rd_clk),
 	.reset_l(reset_l));
 
 bw_r_rf16x2 arr3 (
@@ -330,6 +333,7 @@ bw_r_rf16x2 arr3 (
 	.wr_data(wrdata_d1[ 31: 24]),
 	.rd_data(dout[ 31: 24]),
 	.clk(wr_clk),
+	.rd_clk(rd_clk),
 	.reset_l(reset_l));
 
 bw_r_rf16x2 arr4 (
@@ -341,6 +345,7 @@ bw_r_rf16x2 arr4 (
 	.wr_data(wrdata_d1[ 39: 32]),
 	.rd_data(dout[ 39: 32]),
 	.clk(wr_clk),
+	.rd_clk(rd_clk),
 	.reset_l(reset_l));
 
 bw_r_rf16x2 arr5 (
@@ -352,6 +357,7 @@ bw_r_rf16x2 arr5 (
 	.wr_data(wrdata_d1[ 47: 40]),
 	.rd_data(dout[ 47: 40]),
 	.clk(wr_clk),
+	.rd_clk(rd_clk),
 	.reset_l(reset_l));
 
 bw_r_rf16x2 arr6 (
@@ -363,6 +369,7 @@ bw_r_rf16x2 arr6 (
 	.wr_data(wrdata_d1[ 55: 48]),
 	.rd_data(dout[ 55: 48]),
 	.clk(wr_clk),
+	.rd_clk(rd_clk),
 	.reset_l(reset_l));
 
 bw_r_rf16x2 arr7 (
@@ -374,6 +381,7 @@ bw_r_rf16x2 arr7 (
 	.wr_data(wrdata_d1[ 63: 56]),
 	.rd_data(dout[ 63: 56]),
 	.clk(wr_clk),
+	.rd_clk(rd_clk),
 	.reset_l(reset_l));
 
 bw_r_rf16x2 arr8 (
@@ -385,6 +393,7 @@ bw_r_rf16x2 arr8 (
 	.wr_data(wrdata_d1[ 71: 64]),
 	.rd_data(dout[ 71: 64]),
 	.clk(wr_clk),
+	.rd_clk(rd_clk),
 	.reset_l(reset_l));
 
 bw_r_rf16x2 arr9 (
@@ -396,6 +405,7 @@ bw_r_rf16x2 arr9 (
 	.wr_data(wrdata_d1[ 79: 72]),
 	.rd_data(dout[ 79: 72]),
 	.clk(wr_clk),
+	.rd_clk(rd_clk),
 	.reset_l(reset_l));
 
 bw_r_rf16x2 arr10(
@@ -407,6 +417,7 @@ bw_r_rf16x2 arr10(
 	.wr_data(wrdata_d1[ 87: 80]),
 	.rd_data(dout[ 87: 80]),
 	.clk(wr_clk),
+	.rd_clk(rd_clk),
 	.reset_l(reset_l));
 
 bw_r_rf16x2 arr11(
@@ -418,6 +429,7 @@ bw_r_rf16x2 arr11(
 	.wr_data(wrdata_d1[ 95: 88]),
 	.rd_data(dout[ 95: 88]),
 	.clk(wr_clk),
+	.rd_clk(rd_clk),
 	.reset_l(reset_l));
 
 bw_r_rf16x2 arr12(
@@ -429,6 +441,7 @@ bw_r_rf16x2 arr12(
 	.wr_data(wrdata_d1[103: 96]),
 	.rd_data(dout[103: 96]),
 	.clk(wr_clk),
+	.rd_clk(rd_clk),
 	.reset_l(reset_l));
 
 bw_r_rf16x2 arr13(
@@ -440,6 +453,7 @@ bw_r_rf16x2 arr13(
 	.wr_data(wrdata_d1[111:104]),
 	.rd_data(dout[111:104]),
 	.clk(wr_clk),
+	.rd_clk(rd_clk),
 	.reset_l(reset_l));
 
 bw_r_rf16x2 arr14(
@@ -451,6 +465,7 @@ bw_r_rf16x2 arr14(
 	.wr_data(wrdata_d1[119:112]),
 	.rd_data(dout[119:112]),
 	.clk(wr_clk),
+	.rd_clk(rd_clk),
 	.reset_l(reset_l));
 
 bw_r_rf16x2 arr15(
@@ -462,6 +477,7 @@ bw_r_rf16x2 arr15(
 	.wr_data(wrdata_d1[127:120]),
 	.rd_data(dout[127:120]),
 	.clk(wr_clk),
+	.rd_clk(rd_clk),
 	.reset_l(reset_l));
 
 bw_r_rf16x2 arr16(
@@ -473,6 +489,7 @@ bw_r_rf16x2 arr16(
 	.wr_data(wrdata_d1[135:128]),
 	.rd_data(dout[135:128]),
 	.clk(wr_clk),
+	.rd_clk(rd_clk),
 	.reset_l(reset_l));
 
 bw_r_rf16x2 arr17(
@@ -484,6 +501,7 @@ bw_r_rf16x2 arr17(
 	.wr_data(wrdata_d1[143:136]),
 	.rd_data(dout[143:136]),
 	.clk(wr_clk),
+	.rd_clk(rd_clk),
 	.reset_l(reset_l));
 
 bw_r_rf16x2 arr18(
@@ -495,6 +513,7 @@ bw_r_rf16x2 arr18(
 	.wr_data(wrdata_d1[151:144]),
 	.rd_data(dout[151:144]),
 	.clk(wr_clk),
+	.rd_clk(rd_clk),
 	.reset_l(reset_l));
 
 bw_r_rf16x2 arr19(
@@ -506,6 +525,7 @@ bw_r_rf16x2 arr19(
 	.wr_data(wrdata_d1[159:152]),
 	.rd_data(dout[159:152]),
 	.clk(wr_clk),
+	.rd_clk(rd_clk),
 	.reset_l(reset_l));
 
 
@@ -666,7 +686,7 @@ endmodule // rf_16x160
 
 
 module bw_r_rf16x2(word_wen, wen, ren, wr_addr, rd_addr, wr_data,
-	rd_data, clk, reset_l);
+	rd_data, clk, rd_clk, reset_l);
   input [3:0] word_wen;
   input	      wen;
   input	      ren;
@@ -675,14 +695,15 @@ module bw_r_rf16x2(word_wen, wen, ren, wr_addr, rd_addr, wr_data,
   input [7:0] wr_data;
   output [7:0] rd_data;
   input	clk;
+  input	rd_clk;
   input reset_l;
 
   reg	[7:0] rd_data_temp;
 
-  reg [1:0] inq_ary0[15:0] /* synthesis syn_ramstyle = block_ram  syn_ramstyle = no_rw_check */;
-  reg [1:0] inq_ary1[15:0] /* synthesis syn_ramstyle = block_ram  syn_ramstyle = no_rw_check */;
-  reg [1:0] inq_ary2[15:0] /* synthesis syn_ramstyle = block_ram  syn_ramstyle = no_rw_check */;
-  reg [1:0] inq_ary3[15:0] /* synthesis syn_ramstyle = block_ram  syn_ramstyle = no_rw_check */;
+  reg [1:0] inq_ary0[15:0];
+  reg [1:0] inq_ary1[15:0];
+  reg [1:0] inq_ary2[15:0];
+  reg [1:0] inq_ary3[15:0];
 
   always @(posedge clk) begin
     if(reset_l & wen & word_wen[0])
@@ -694,43 +715,13 @@ module bw_r_rf16x2(word_wen, wen, ren, wr_addr, rd_addr, wr_data,
     if(reset_l & wen & word_wen[3])
       inq_ary3[wr_addr] = {wr_data[7],wr_data[3]};
   end
-/*
-  always @(wen or word_wen or reset_l or wr_data or wr_addr) begin
-    if (reset_l) begin
-      if(wen & word_wen[0])
-        inq_ary0[wr_addr] = {wr_data[4],wr_data[0]};
-      if(wen & word_wen[1])
-        inq_ary1[wr_addr] = {wr_data[5],wr_data[1]};
-      if(wen & word_wen[2])
-        inq_ary2[wr_addr] = {wr_data[6],wr_data[2]};
-      if(wen & word_wen[3])
-        inq_ary3[wr_addr] = {wr_data[7],wr_data[3]};
-    end
-  end
-*/
-  
-  always @(ren or rd_addr or reset_l or 
-	 wr_addr or wen or word_wen) begin
-    if (reset_l && (ren == 1'b1)) begin
-        rd_data_temp = {inq_ary3[rd_addr], inq_ary2[rd_addr], 
-		      inq_ary1[rd_addr], inq_ary0[rd_addr]};
-	if (rd_addr == wr_addr) begin
-            if(wen & word_wen[0]) begin
-		rd_data_temp[1:0] = 2'b0;
-	    end
-            if(wen & word_wen[1]) begin
-		rd_data_temp[3:2] = 2'b0;
-	    end
-            if(wen & word_wen[2]) begin
-		rd_data_temp[5:4] = 2'b0;
-	    end
-            if(wen & word_wen[3]) begin
-		rd_data_temp[7:6] = 2'b0;
-	    end
-	end
-   end
-   else 
+
+  always @(negedge rd_clk) begin
+    if (~reset_l) begin
       rd_data_temp = 8'b0;
+    end else if(ren == 1'b1) begin
+        rd_data_temp = {inq_ary3[rd_addr], inq_ary2[rd_addr], inq_ary1[rd_addr], inq_ary0[rd_addr]};
+    end
   end
 
   assign rd_data = {rd_data_temp[7], rd_data_temp[5], rd_data_temp[3], 

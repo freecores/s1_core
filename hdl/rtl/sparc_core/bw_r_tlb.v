@@ -620,6 +620,12 @@
 
 
 
+
+
+  
+  
+
+
 module bw_r_tlb ( /*AUTOARG*/
    // Outputs
    tlb_rd_tte_tag, tlb_rd_tte_data, tlb_pgnum, tlb_pgnum_crit, 
@@ -691,43 +697,42 @@ wire	[58:0]		wr_tte_tag ;	// CHANGE
 wire	[42:0]		wr_tte_data ;
 wire	[29:3]		phy_pgnum_m;
 wire	[29:0]		pgnum_m;
-wire 	[8-1:0] used ;
+wire 	[64-1:0] used ;
 wire			tlb_not_writeable ;
 wire	[40:25] 	tlb_cam_key_masked ;
 wire	[26:0]		tlb_cam_comp_key ;
 wire			cam_vld ;
 wire			demap_other ;
 wire	[3:0]   	cache_way_hit ;
-wire	[8-1:0]		mismatch;
+wire	[64-1:0]		mismatch;
 
 reg			tlb_not_writeable_d1 ;
 reg			tlb_writeable ;
-wire	[8-1:0]		tlb_entry_locked ;
-wire	[8-1:0]		cam_hit ;
-wire	[8-1:0]		demap_hit ;
-reg	[8-1:0]		ademap_hit ;
+wire	[64-1:0]		tlb_entry_locked ;
+wire	[64-1:0]		cam_hit ;
+wire	[64-1:0]		demap_hit ;
+reg	[64-1:0]		ademap_hit ;
 wire	[58:0]		rd_tte_tag ;	// CHANGE
 wire	[42:0]		rd_tte_data ;	
-reg	[58:0]		tlb_rd_tte_tag ; // CHANGE	
 reg	[42:0]		tlb_rd_tte_data ;	
 reg			cam_vld_tmp ;
 reg	[2:0]		cam_pid ;
 reg	[53:0]		cam_data ;
 reg			demap_auto, demap_other_tmp, demap_all ;
-reg	[8-1:0]		tlb_entry_vld ;
-wire	[8-1:0]		tlb_entry_used ;
-reg	[8-1:0]		tlb_entry_replace ;
-reg	[8-1:0]		tlb_entry_replace_d2 ;
+reg	[64-1:0]		tlb_entry_vld ;
+wire	[64-1:0]		tlb_entry_used ;
+reg	[64-1:0]		tlb_entry_replace ;
+reg	[64-1:0]		tlb_entry_replace_d2 ;
 reg	[29:0]		pgnum_g ;
 reg     [3:0]		cache_set_vld_g;
 reg	[29:0]		cache_ptag_w0_g,cache_ptag_w1_g;
 reg	[29:0]		cache_ptag_w2_g,cache_ptag_w3_g;
-reg	[8-1:0]		rw_wdline ;
+reg	[64-1:0]		rw_wdline ;
 
 reg			rd_tag; 
 reg			rd_data;
 reg			wr_vld_tmp;
-reg	[3-1:0]		rw_index;
+reg	[6-1:0]		rw_index;
 reg			rw_index_vld;
 wire	[29:0] 		vrtl_pgnum_m;
 wire			bypass ;
@@ -847,15 +852,15 @@ wire rw_disable ;
 assign	rw_disable = ~arst_l | rst_tri_en ;
 
 
-reg     [3-1:0]   cam_hit_encoded;
+reg     [6-1:0]   cam_hit_encoded;
 integer ii;
 
 reg cam_hit_any;
 
 always @(cam_hit) begin
   cam_hit_any = 1'b0;
-  cam_hit_encoded = {3{1'b0}};
-  for(ii=0;ii<8;ii=ii+1) begin
+  cam_hit_encoded = {6{1'b0}};
+  for(ii=0;ii<64;ii=ii+1) begin
     if(cam_hit[ii]) begin
       cam_hit_encoded = ii;
       cam_hit_any = 1'b1;
@@ -915,7 +920,7 @@ always @ (posedge clk)
 		rd_tag 			<= rd_tag ;
 		rd_data			<= rd_data ;
 		rw_index_vld		<= rw_index_vld ;
-		rw_index[3-1:0]		<= rw_index[3-1:0] ; 	
+		rw_index[6-1:0]		<= rw_index[6-1:0] ; 	
 		end
 	else
 		begin
@@ -929,7 +934,7 @@ always @ (posedge clk)
 		rd_tag 			<= tlb_rd_tag_vld ;
 		rd_data			<= tlb_rd_data_vld ;
 		rw_index_vld		<= tlb_rw_index_vld ;
-		rw_index[3-1:0]		<= tlb_rw_index[3-1:0] ; 	
+		rw_index[6-1:0]		<= tlb_rw_index[6-1:0] ; 	
 		end
 
 	end
@@ -949,11 +954,11 @@ assign	wr_vld = wr_vld_tmp & ~rst_tri_en ;
 //=========================================================================================
 
 
+assign tlb_rd_tte_tag[58:0] = rd_tte_tag[58:0] ;	// CHANGE
 
 // Stage to next cycle.
 always	@ (posedge clk)
 	begin
-		tlb_rd_tte_tag[58:0] 	<= rd_tte_tag[58:0] ;	// CHANGE
 		tlb_rd_tte_data[42:0] 	<= rd_tte_data[42:0] ;
 	end
 
@@ -967,7 +972,7 @@ always	@ (posedge clk)
 always  @ ( negedge clk )
 	begin
 	
-		for (n=0;n<8;n=n+1)
+		for (n=0;n<64;n=n+1)
 			begin
                                 if (demap_auto & demap_other) 
 					ademap_hit[n] = (~mismatch[n] & demap_other & tlb_entry_vld[n]) ;
@@ -976,7 +981,7 @@ always  @ ( negedge clk )
 	end  // always
 
 
-assign	tlb_cam_hit = |cam_hit[8-1:0] ;
+assign	tlb_cam_hit = |cam_hit[64-1:0] ;
 
 // Change tlb_entry_vld handling for multi-threaded tlb writes.
 // A write is always preceeded by an autodemap. The intent is to make the result of autodemap
@@ -991,8 +996,8 @@ assign	tlb_cam_hit = |cam_hit[8-1:0] ;
 always  @ (/*AUTOSENSE*/rd_data or rd_tag or rw_index or rw_index_vld
            or wr_vld_tmp)
         begin
-                for (i=0;i<8;i=i+1)
-                        if ((rw_index[3-1:0] == i) & ((wr_vld_tmp & rw_index_vld) | rd_tag | rd_data))
+                for (i=0;i<64;i=i+1)
+                        if ((rw_index[6-1:0] == i) & ((wr_vld_tmp & rw_index_vld) | rd_tag | rd_data))
                                 rw_wdline[i] = 1'b1 ;
                         else    rw_wdline[i] = 1'b0 ;
 
@@ -1001,7 +1006,7 @@ always  @ (/*AUTOSENSE*/rd_data or rd_tag or rw_index or rw_index_vld
 
 always @ (negedge clk)
 	begin
-	for (r=0;r<8;r=r+1)
+	for (r=0;r<64;r=r+1)
 	begin // for
 	if (((rw_index_vld & rw_wdline[r]) | (~rw_index_vld & tlb_entry_replace_d2[r])) & 
 		wr_vld & ~rw_disable)
@@ -1115,7 +1120,7 @@ assign	cache_hit = |cache_way_hit[3:0];
 // Choosing replacement entry
 // Replacement entry is integer k
 
-assign	tlb_not_writeable = &used[8-1:0] ;
+assign	tlb_not_writeable = &used[64-1:0] ;
 /*
 // Used bit can be set because of write or because of cam-hit.
 always @(negedge clk)
@@ -1145,21 +1150,21 @@ always @(negedge clk)
 
 // Determine whether entry should be squashed.
 
-assign	used[8-1:0] = tlb_entry_used[8-1:0] & tlb_entry_vld[8-1:0] ;
+assign	used[64-1:0] = tlb_entry_used[64-1:0] & tlb_entry_vld[64-1:0] ;
 
 
 // Based on updated Used state, generate replacement entry.
 // So, replacement entries can be generated on a cycle-by-cycle basis. 
 //always @(/*AUTOSENSE*/squash or used)
 
-	reg	[8-1:0]	tlb_entry_replace_d1;
+	reg	[64-1:0]	tlb_entry_replace_d1;
 	reg		tlb_replace_flag;
 	always @(/*AUTOSENSE*/used)
 	begin
   	  tlb_replace_flag=1'b0;
-  	  tlb_entry_replace_d1 = {8-1{1'b0}};
+  	  tlb_entry_replace_d1 = {64-1{1'b0}};
   	  // Priority is given to entry0
-   	  for (u=0;u<8;u=u+1)
+   	  for (u=0;u<64;u=u+1)
   	  begin
     	    if(~tlb_replace_flag & ~used[u])
     	    begin
@@ -1168,7 +1173,7 @@ assign	used[8-1:0] = tlb_entry_used[8-1:0] & tlb_entry_vld[8-1:0] ;
     	    end
   	  end
   	  if(~tlb_replace_flag) begin
-      	     tlb_entry_replace_d1[8-1] = 1'b1;
+      	     tlb_entry_replace_d1[64-1] = 1'b1;
  	  end
 	end
 	always @(posedge clk)
@@ -1182,14 +1187,14 @@ assign	used[8-1:0] = tlb_entry_used[8-1:0] & tlb_entry_vld[8-1:0] ;
   	  tlb_entry_replace_d2 <= tlb_entry_replace ;
 	end
 
-reg [3-1:0]  tlb_index_a1;
-reg [3-1:0]  tlb_index;
+reg [6-1:0]  tlb_index_a1;
+reg [6-1:0]  tlb_index;
 wire tlb_index_vld_a1 = |tlb_entry_replace;
 reg  tlb_index_vld;
 integer jj;
 always @(tlb_entry_replace) begin
-  tlb_index_a1 = {3{1'b0}};
-  for(jj=0;jj<8;jj=jj+1)
+  tlb_index_a1 = {6{1'b0}};
+  for(jj=0;jj<64;jj=jj+1)
     if(tlb_entry_replace[jj]) tlb_index_a1 = jj;
 end
 always @(posedge clk) begin
@@ -1293,13 +1298,13 @@ input		rd_tag;
 input		rw_index_vld;
 input		wr_vld_tmp;
 input		clk;
-input	[3-1:0]	rw_index;
-input	[3-1:0]	tlb_index;
+input	[6-1:0]	rw_index;
+input	[6-1:0]	tlb_index;
 input		tlb_index_vld;
 input		rw_disable;
 input		rst_tri_en;
 input	[58:0]	wr_tte_tag;
-input	[8-1:0]	tlb_entry_vld;
+input	[64-1:0]	tlb_entry_vld;
 input		tlb_writeable;
 input		wr_vld;
 input	[2:0]	cam_pid;
@@ -1308,59 +1313,56 @@ input		demap_other;
 input	[53:0]	cam_data;
 input		cam_vld ;
 
-output	[8-1:0]	cam_hit ;
-output	[8-1:0]	demap_hit ;
-output	[8-1:0]	tlb_entry_used;
-output	[8-1:0]	tlb_entry_locked;
-reg	[8-1:0]	tlb_entry_locked ;
+output	[64-1:0]	cam_hit ;
+output	[64-1:0]	demap_hit ;
+output	[64-1:0]	tlb_entry_used;
+output	[64-1:0]	tlb_entry_locked;
+reg	[64-1:0]	tlb_entry_locked ;
 
 output	[58:0]	rd_tte_tag;
-output	[8-1:0]	mismatch;
+reg	[58:0]	rd_tte_tag;
+output	[64-1:0]	mismatch;
 
-reg	[8-1:0]	sat;
+reg	[64-1:0]	sat;
 
-reg	[8-1:0]	mismatch;
-reg	[8-1:0]	cam_hit ;
-reg	[8-1:0]	demap_all_but_locked_hit ;
+reg	[64-1:0]	mismatch;
+reg	[64-1:0]	cam_hit ;
+reg	[64-1:0]	demap_all_but_locked_hit ;
 reg	[58:0]	tag ;	// CHANGE
 
-reg	[58:0]	rd_tte_tag;
 
-reg	[8-1:0]	mismatch_va_b47_28;
-reg	[8-1:0]	mismatch_va_b27_22;
-reg	[8-1:0]	mismatch_va_b21_16;
-reg	[8-1:0]	mismatch_va_b15_13;
-reg	[8-1:0]	mismatch_ctxt;
-reg	[8-1:0]	mismatch_pid;
-reg	[8-1:0]	mismatch_type;
-reg	[8-1:0]	tlb_entry_used ;
+reg	[64-1:0]	mismatch_va_b47_28;
+reg	[64-1:0]	mismatch_va_b27_22;
+reg	[64-1:0]	mismatch_va_b21_16;
+reg	[64-1:0]	mismatch_va_b15_13;
+reg	[64-1:0]	mismatch_ctxt;
+reg	[64-1:0]	mismatch_pid;
+reg	[64-1:0]	mismatch_type;
+reg	[64-1:0]	tlb_entry_used ;
 
 integer i,j,n,m, w, p, k, s, t;
 
 
-reg	[58:0]		tte_tag_ram  [8-1:0] /* synthesis syn_ramstyle = block_ram  syn_ramstyle = no_rw_check */ ;
-
-
+reg	[58:0]		tte_tag_ram  [64-1:0] /* synthesis syn_ramstyle = block_ram  syn_ramstyle = no_rw_check */ ;
 
 reg	[58:0]	tmp_tag ;
+
+wire wren = rw_index_vld & wr_vld_tmp & ~rw_disable;
+wire tlben = tlb_index_vld & ~rw_index_vld & wr_vld_tmp & ~rw_disable;
+wire  [6-1:0] wr_addr = wren ? rw_index : tlb_index;
+
 
 always	@ (negedge clk) begin
 //=========================================================================================
 //	Write TLB
 //=========================================================================================
-	if(rw_index_vld & wr_vld_tmp & ~rw_disable) begin
-		tte_tag_ram[rw_index] <= wr_tte_tag[58:0];
-		tlb_entry_used[rw_index] <= wr_tte_tag[24];
-		tlb_entry_locked[rw_index] = wr_tte_tag[25];
-		rd_tte_tag[58:0]  <= wr_tte_tag[58:0] ;	// CHANGE 
-	end else 
-	if(tlb_index_vld & ~rw_index_vld & wr_vld_tmp & ~rw_disable) begin
-		tte_tag_ram[tlb_index] <= wr_tte_tag[58:0];
-		tlb_entry_used[tlb_index] <= wr_tte_tag[24];
-		tlb_entry_locked[tlb_index] = wr_tte_tag[25];
-		rd_tte_tag[58:0]  <= wr_tte_tag[58:0] ;	// CHANGE 
+
+	if(wren | tlben) begin
+		tte_tag_ram[wr_addr] <= wr_tte_tag[58:0];
+		tlb_entry_used[wr_addr] <= wr_tte_tag[24];
+		tlb_entry_locked[wr_addr] = wr_tte_tag[25];
 	end else begin
-	  tlb_entry_used <= (tlb_entry_used | cam_hit) & (tlb_entry_locked | ~{8{~tlb_writeable & ~cam_vld & ~wr_vld & ~rd_tag & ~rst_tri_en}}) ;
+	  tlb_entry_used <= (tlb_entry_used | cam_hit) & (tlb_entry_locked | ~{64{~tlb_writeable & ~cam_vld & ~wr_vld & ~rd_tag & ~rst_tri_en}}) ;
         end
 
 //=========================================================================================
@@ -1368,21 +1370,34 @@ always	@ (negedge clk) begin
 //=========================================================================================
 
 	if(rd_tag & ~rw_disable) begin
-		tmp_tag  = tte_tag_ram[rw_index];
-		rd_tte_tag[58:0] <= {tmp_tag[58:27], tlb_entry_vld[rw_index],
-				     tlb_entry_locked[rw_index], tlb_entry_used[rw_index], tmp_tag[23:0]};
+		tmp_tag  <= tte_tag_ram[rw_index];
 	end
 
 
 end // always
 
+always @(posedge clk) begin
+  if(rd_tag & ~rw_disable)
+    rd_tte_tag[58:0] = {tmp_tag[58:27], tlb_entry_vld[rw_index], tlb_entry_locked[rw_index], tlb_entry_used[rw_index], tmp_tag[23:0]};
+  else if(wren | tlben)
+    rd_tte_tag[58:0] = wr_tte_tag[58:0];
+end
+
+reg	[58:0]		tte_tag_ram2  [64-1:0];
+
+always	@ (negedge clk) begin
+  if(wren | tlben)
+    tte_tag_ram2[wr_addr] <= wr_tte_tag[58:0];
+end
+
+
 always	@ (cam_data or cam_pid or cam_vld or demap_all
            or demap_other or tlb_entry_vld)
 	begin
 	
-		for (n=0;n<8;n=n+1)
+		for (n=0;n<64;n=n+1)
 			begin
-			tag[58:0] = tte_tag_ram[n] ;	// CHANGE
+			tag[58:0] = tte_tag_ram2[n] ;	// CHANGE
 
 			mismatch_va_b47_28[n] = 
 			(tag[53:34] 
@@ -1423,10 +1438,12 @@ always	@ (cam_data or cam_pid or cam_vld or demap_all
 
 	end  // always
 
-	assign demap_hit = demap_all ? ~mismatch & demap_all_but_locked_hit & tlb_entry_vld & {8{demap_other}}
-				     : ~mismatch & tlb_entry_vld & {8{demap_other}};
+	assign demap_hit = demap_all ? ~mismatch & demap_all_but_locked_hit & tlb_entry_vld & {64{demap_other}}
+				     : ~mismatch & tlb_entry_vld & {64{demap_other}};
 
 endmodule
+
+
 
 module bw_r_tlb_data_ram(rd_data, rw_index_vld, wr_vld_tmp, clk, cam_vld,
         rw_index, tlb_index, tlb_index_vld, rw_disable, rst_tri_en, wr_tte_data,

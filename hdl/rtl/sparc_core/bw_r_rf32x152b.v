@@ -38,208 +38,251 @@
 
 
 
-module bw_r_rf32x152b (/*AUTOARG*/
-   // Outputs
-   dout, so, 
-   // Inputs
-   rd_en, rd_adr, wr_en, wr_adr, din, 
-   si, se, sehold, rclk, rst_tri_en, reset_l);  
 
-parameter NUMENTRIES = 32 ;     // number of entries in dfq 
 
-input [4:0]   rd_adr;     // read adr. 
-input         rd_en;      // read pointer
-input         wr_en;      // write pointer vld
-input [4:0]   wr_adr;     // write adr.
-input [151:0] din;            // wr data 
-input             rclk;       // clock
-input         reset_l;    // active low reset
-input         rst_tri_en; // reset and scan  
-input         sehold;     // scan hold 
-input             si;             // scan in 
-input             se;             // scan enable 
-
-output  [151:0] dout ; // data read out
-output                  so ;   // scan out  
-
-wire [151:0]    dout;
-wire clk; 
-wire wr_vld; 
-
-reg     [151:0]         dfq_mem [NUMENTRIES-1:0] /* synthesis syn_ramstyle = block_ram  syn_ramstyle = no_rw_check */ ;
-
-reg [151:0]     local_dout;
-// reg                  so; 
-
-integer i,j;
-
-//
-// added for atpg support
-wire [4:0]   sehold_rd_adr;        // output of sehold mux - read adr. 
-wire         sehold_rd_en;         // output of sehold mux - read pointer
-wire         sehold_wr_en;         // output of sehold mux - write pointer vld
-wire [4:0]   sehold_wr_adr;        // output of sehold mux - write adr.
-wire [151:0]  sehold_din;          // wr data 
-
-wire [4:0]   rd_adr_d1;    // flopped read adr. 
-wire         rd_en_d1;     // flopped read pointer
-wire         wr_en_d1;     // flopped write pointer vld
-wire [4:0]   wr_adr_d1;    // flopped write adr.
-wire [151:0]  din_d1;      // flopped wr data 
-
-//
-// creating local clock
-assign clk=rclk;
-// 
-//=========================================================================================
-//      support for atpg pattern generation
-//=========================================================================================
-//
-// read controls
-dp_mux2es #(6) mux_sehold_rd_ctrl (
-    .in0  ({rd_adr[4:0], rd_en}),
-    .in1  ({rd_adr_d1[4:0], rd_en_d1}),
-    .sel  (sehold),
-    .dout ({sehold_rd_adr[4:0],sehold_rd_en})
-);
-
-dff #(6) dff_rd_ctrl_d1(
-    .din ({sehold_rd_adr[4:0], sehold_rd_en}),
-    .q   ({rd_adr_d1[4:0], rd_en_d1}),
-    .clk (clk), 
-    .se  (se),
-    .si  (),
-    .so  ()
-);
-//
-// write controls
-dp_mux2es #(6) mux_sehold_wr_ctrl (
-        .in0    ({wr_adr[4:0], wr_en}),
-        .in1    ({wr_adr_d1[4:0], wr_en_d1}),
-        .sel    (sehold),
-        .dout   ({sehold_wr_adr[4:0],sehold_wr_en})
-);
-
-dff #(6) dff_wr_ctrl_d1(
-    .din ({sehold_wr_adr[4:0], sehold_wr_en}),
-    .q   ({wr_adr_d1[4:0], wr_en_d1}),
-    .clk (clk), 
-    .se  (se),
-    .si  (),
-    .so  ()
-);
-//
-// write data
-dp_mux2es #(152) mux_sehold_din (
-        .in0    (din[151:0]),
-        .in1    (din_d1[151:0]),
-        .sel    (sehold),
-        .dout   (sehold_din[151:0])
-);
-
-dff #(152) dff_din_d1(
-    .din (sehold_din[151:0]),
-    .q   (din_d1[151:0]),
-    .clk (clk), 
-    .se  (se),
-    .si  (),
-    .so  ()
-);
-
-//
-// diable write to register file during reset or scan
-assign wr_vld = sehold_wr_en & ~rst_tri_en & reset_l; 
-
-//    always @ (posedge clk)
-//      begin
-//         so <= 1'bx;
-//      end
-
-//=========================================================================================
-//      generate wordlines
-//=========================================================================================
-
-// Word-Line Generation skipped. Implicit in read and write.
-
-//=========================================================================================
-//      write or read to/from memory
-//=========================================================================================
-
-
-always @ ( posedge clk ) 
-        begin
-                if (wr_vld)
-                 dfq_mem[sehold_wr_adr] = sehold_din[151:0] ;
-		end
-
-always @ ( posedge clk ) 
-        begin
-                   if (sehold_rd_en)
-                      begin 
-
-		local_dout[151:0] <= dfq_mem[sehold_rd_adr[4:0]];
-
-
-
-
-
-
-
-
-
-
-                    end     
-        end
-
-
-
-
-
-
-
-
-
-
-
-assign dout[151:0] = local_dout[151:0];
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+module bw_r_rf32x152b(dout, so, rd_en, rd_adr, wr_en, wr_adr, din, si, se, 
+	sehold, rclk, rst_tri_en, reset_l);
+
+	parameter		NUMENTRIES	= 32;
+
+	input	[4:0]		rd_adr;
+	input			rd_en;
+	input			wr_en;
+	input	[4:0]		wr_adr;
+	input	[151:0]		din;
+	input			rclk;
+	input			reset_l;
+	input			rst_tri_en;
+	input			sehold;
+	input			si;
+	input			se;
+	output	[151:0]		dout;
+	reg	[151:0]		dout;
+	output			so;
+
+	wire			clk;
+	wire			wr_vld;
+
+	reg	[151:0]		dfq_mem[(NUMENTRIES - 1):0] /* synthesis syn_ramstyle = block_ram  syn_ramstyle = no_rw_check */ ;
+
+	assign clk = rclk;
+	assign wr_vld = ((wr_en & (~rst_tri_en)) & reset_l);
+
+	always @(posedge clk) begin
+	  if (wr_vld) begin
+	    dfq_mem[wr_adr] = din;
+	  end
+	end
+	always @(posedge clk) begin
+	  if (rd_en) begin
+	    dout[151:0] <= dfq_mem[rd_adr[4:0]];
+	  end
+	end
 endmodule
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

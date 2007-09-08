@@ -1623,7 +1623,11 @@ module sparc_ifu_fcl(/*AUTOARG*/
 		 // 0in <fire -message "ERROR: sparc_ifu_fcl: rd and wr req to I$ at the same time"
 
            
+		
+
+
 	         $display("CACHE_CONTENTION", "ERROR: sparc_ifu_fcl: rd and wr req to I$ at the same time");
+			 
 
 	      end
    end

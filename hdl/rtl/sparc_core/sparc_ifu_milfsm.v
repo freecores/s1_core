@@ -432,11 +432,15 @@ module sparc_ifu_milfsm(/*AUTOARG*/
 		     // 0in <fire -message "MILSTATE, Error: SPARC/IFU/MILFSM: unknown state!"
 
 
-               if($time>2)
+               if ($time > (4* 1))
                  begin
+				
+
+
+
 	                  $display ("MILSTATE", 
-                            "Error: SPARC/IFU/MILFSM: unknown state! %b\n", 
-			                      milstate);
+                            "Error: SPARC/IFU/MILFSM: unknown state! %b\n",milstate);
+				
                  end
 
                // synopsys translate_on               

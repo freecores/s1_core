@@ -141,7 +141,7 @@ module sparc_exu_alu
 
    // Logic/pass rs2_data
    dff invert_d2e(.din(ifu_exu_invert_d), .clk(clk), .q(invert_e), .se(se), .si(), .so());
-   sparc_exu_alulogic logic(.rs1_data(byp_alu_rs1_data_e[63:0]),
+   sparc_exu_alulogic logic_MAYBEARESERVEDWORD(.rs1_data(byp_alu_rs1_data_e[63:0]),
                             .rs2_data(byp_alu_rs2_data_e[63:0]),
                             .isand(ecl_alu_log_sel_and_e),
                             .isor(ecl_alu_log_sel_or_e),
