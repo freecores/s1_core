@@ -56,15 +56,27 @@ rm bw_r_l2t.v bw_r_cm16x40.v bw_r_cm16x40b.v bw_r_dcm.v bw_r_efa.v bw_r_l2d.v bw
 for file in $DST_DIR/*.v ; do
   sed -e 's/\$error/\$display/g' $file | sed -e 's/negedge rclk or rst_l/negedge rclk/g' > $DST_DIR/temp.v
   if(test $1 == "-me" || test $1 == "-se") then
-    iverilog -E -D FPGA_SYN -D FPGA_SYN_1THREAD -D FPGA_SYN_NO_SPU -I $DST_DIR/include -o$file $DST_DIR/temp.v
+    iverilog -E -D CMP_CLK_PERIOD=1 -D FPGA_SYN -D FPGA_SYN_1THREAD -D FPGA_SYN_NO_SPU -I $DST_DIR/include -o$file $DST_DIR/temp.v
   else
-    iverilog -E -D FPGA_SYN -D FPGA_SYN_NO_SPU -I $DST_DIR/include -o$file $DST_DIR/temp.v
+    iverilog -E -D CMP_CLK_PERIOD=1 -D FPGA_SYN -D FPGA_SYN_NO_SPU -I $DST_DIR/include -o$file $DST_DIR/temp.v
   fi
-  sed -e 's/\* ========== Copyright Header Begin/\/\* ========== Copyright Header Begin/g' $file | sed -e 's/if (\$time > (4\* ))/if(\$time>2)/g' > $DST_DIR/temp.v
+  # These steps are required because Icarus does not allow this kind of comments
+  sed -e 's/\* ========== Copyright Header Begin/\/\* ========== Copyright Header Begin/g' $file > $DST_DIR/temp.v
   mv -f $DST_DIR/temp.v $file
 done
 
-# Disable L1 Instruction and Data Caches
+# Correct some strange strings
+sed -e 's/sparc_exu_alulogic logic/sparc_exu_alulogic logic_MAYBEARESERVEDWORD/g' $DST_DIR/sparc_exu_alu.v > $DST_DIR/temp.v
+mv $DST_DIR/temp.v $DST_DIR/sparc_exu_alu.v
+sed -e 's/logic/logic_MAYBEARESERVEDWORD/g' $DST_DIR/sparc_ffu_ctl_visctl.v > $DST_DIR/temp.v
+mv $DST_DIR/temp.v $DST_DIR/sparc_ffu_ctl_visctl.v
+sed -e 's/$display(\"ILLEGAL_THR_STATE\"/\/\/$display(\"ILLEGAL_THR_STATE\"/g' sparc_ifu_thrfsm.v > $DST_DIR/temp.v
+mv $DST_DIR/temp.v $DST_DIR/sparc_ifu_thrfsm.v
+
+# After preprocessing we can safely delete the include directory
+rm -f $DST_DIR/include/*.*
+
+# Disable L1 Instruction and Data Caches if required
 if(test $1 == "-me") then
   cp -f $S1_ROOT/tools/src/bw_r_dcd.v $DST_DIR
   cp -f $S1_ROOT/tools/src/bw_r_icd.v $DST_DIR

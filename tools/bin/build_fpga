@@ -1,5 +1,5 @@
 #!/bin/bash
 
 cd $S1_ROOT/run/synth/fpga
-iverilog -t fpga -o fpga.edif -c$FILELIST_FPGA 2>&1 | tee synth.log
+iverilog -g1 -t xnf -o fpga.edif -c$FILELIST_FPGA 2>&1 | tee synth.log
 

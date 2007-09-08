@@ -11,11 +11,12 @@ echo $S1_ROOT/hdl/rtl/s1_top/spc2wbm.v >> $FILELIST_ICARUS
 echo $S1_ROOT/hdl/rtl/s1_top/s1_top.v >> $FILELIST_ICARUS
 echo $S1_ROOT/hdl/behav/testbench/mem_harness.v >> $FILELIST_ICARUS
 echo $S1_ROOT/hdl/behav/testbench/testbench.v >> $FILELIST_ICARUS
-echo "+incdir+"`find $S1_ROOT/hdl/rtl/sparc_core -name "include"` >> $FILELIST_ICARUS
+# echo "+incdir+"`find $S1_ROOT/hdl/rtl/sparc_core -name "include"` >> $FILELIST_ICARUS
 echo "+incdir+"$S1_ROOT/hdl/rtl/s1_top >> $FILELIST_ICARUS
 echo "+define+FPGA_SYN" >> $FILELIST_ICARUS
 echo "+define+FPGA_SYN_1THREAD" >> $FILELIST_ICARUS
 echo "+define+FPGA_SYN_NO_SPU" >> $FILELIST_ICARUS
+echo "+define+DEBUG" >> $FILELIST_ICARUS
 
 # Create the VCS filelist (for Synopsys simulation)
 rm -f $FILELIST_VCS
@@ -30,7 +31,7 @@ echo $S1_ROOT/hdl/rtl/s1_top/spc2wbm.v >> $FILELIST_VCS
 echo $S1_ROOT/hdl/rtl/s1_top/s1_top.v >> $FILELIST_VCS
 echo $S1_ROOT/hdl/behav/testbench/mem_harness.v >> $FILELIST_VCS
 echo $S1_ROOT/hdl/behav/testbench/testbench.v >> $FILELIST_VCS
-echo "+incdir+"`find $S1_ROOT/hdl/rtl/sparc_core -name "include"` >> $FILELIST_VCS
+# echo "+incdir+"`find $S1_ROOT/hdl/rtl/sparc_core -name "include"` >> $FILELIST_VCS
 echo "+incdir+"$S1_ROOT/hdl/rtl/s1_top >> $FILELIST_VCS
 ## TODO
 # please find the proper option for the defines and put them here!!!
@@ -38,13 +39,13 @@ echo "+incdir+"$S1_ROOT/hdl/rtl/s1_top >> $FILELIST_VCS
 # Create the FPGA filelist (for Icarus synthesis)
 rm -f $FILELIST_FPGA
 touch $FILELIST_FPGA
-find $S1_ROOT/hdl/macrocell/sparc_libs -name "*.v" >> $FILELIST_FPGA
+find $S1_ROOT/hdl/behav/sparc_libs -name "*.v" >> $FILELIST_FPGA
 find $S1_ROOT/hdl/rtl/sparc_core -name "*.v" >> $FILELIST_FPGA
 echo $S1_ROOT/hdl/rtl/s1_top/rst_ctrl.v >> $FILELIST_FPGA
 echo $S1_ROOT/hdl/rtl/s1_top/int_ctrl.v >> $FILELIST_FPGA
 echo $S1_ROOT/hdl/rtl/s1_top/spc2wbm.v >> $FILELIST_FPGA
 echo $S1_ROOT/hdl/rtl/s1_top/s1_top.v >> $FILELIST_FPGA
-echo "+incdir+"`find $S1_ROOT/hdl/rtl/sparc_core -name "include"` >> $FILELIST_FPGA
+# echo "+incdir+"`find $S1_ROOT/hdl/rtl/sparc_core -name "include"` >> $FILELIST_FPGA
 echo "+incdir+"$S1_ROOT/hdl/rtl/s1_top >> $FILELIST_FPGA
 echo "+define+FPGA_SYN" >> $FILELIST_FPGA
 echo "+define+FPGA_SYN_1THREAD" >> $FILELIST_FPGA
@@ -53,7 +54,7 @@ echo "+define+FPGA_SYN_NO_SPU" >> $FILELIST_FPGA
 # Create the DC filelist (for Synopsys synthesis)
 rm -f $FILELIST_DC
 touch $FILELIST_DC
-find $S1_ROOT/hdl/macrocell/sparc_libs -name "*.v" >> $FILELIST_DC
+find $S1_ROOT/hdl/behav/sparc_libs -name "*.v" >> $FILELIST_DC
 find $S1_ROOT/hdl/rtl/sparc_core -name "*.v" >> $FILELIST_DC
 echo $S1_ROOT/hdl/rtl/s1_top/rst_ctrl.v >> $FILELIST_DC
 echo $S1_ROOT/hdl/rtl/s1_top/int_ctrl.v >> $FILELIST_DC
