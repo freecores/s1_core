@@ -70,6 +70,7 @@ module mem_harness (
   integer       i;                     // Index
 
   // Initialization
+`ifdef DEBUG
   initial begin
     $display("INFO: MEMH %m: Memory Harness with Wishbone Slave interface starting...");
     $display("INFO: MEMH %m: %0d Address Bits / %0d Doublewords / %0d Bytes Total Memory", addr_bits, addr_max+1, (addr_max+1)*8);
@@ -77,6 +78,7 @@ module mem_harness (
     $readmemh(memfilename, mem);
     $display("INFO: MEMH %m: Memory initialization completed");
   end
+`endif
 
   // Assignments
   assign tmp_rd = mem[wbs_addr_i[addr_bits+2:3]];
@@ -102,7 +104,9 @@ module mem_harness (
       wbs_data_o = tmp_rd;
 
       // Write a comment
+`ifdef DEBUG
       if(wbs_sel_i) $display("INFO: MEMH %m: R @ %t ns, AD=%X SEL=%X DAT=%X", $time, wbs_addr_i, wbs_sel_i, wbs_data_o);
+`endif
 
     // Write cycle
     end else if(wbs_cycle_i & wbs_strobe_i & wbs_we_i) begin
@@ -117,7 +121,9 @@ module mem_harness (
       mem[wbs_addr_i[addr_bits+2:3]] = tmp_wd;
 
       // Write a comment
+`ifdef DEBUG
       if(wbs_sel_i) $display("INFO: MEMH %m: W @ %t ns, AD=%X SEL=%X DAT=%X", $time, wbs_addr_i, wbs_sel_i, tmp_wd);
+`endif
 
     // No read/write cycle
     end else begin
