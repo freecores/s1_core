@@ -4113,10 +4113,12 @@ module zckenbuf_prim (clk, rclk, en_l, tm_l);
 output clk;
 input  rclk, en_l, tm_l;
 reg    clken;
+
   always @ (rclk or en_l or tm_l)
     if (!rclk)  //latch opens on rclk low phase
       clken <= ~en_l | ~tm_l;
   assign clk = clken & rclk;
+
 endmodule
 
 module bw_mckbuf_40x (clk, rclk, en);
