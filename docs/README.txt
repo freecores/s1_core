@@ -7,6 +7,7 @@ that you can find in the "docs" subdirectory:
 
   - README.txt        Summary (this file)
   - INSTALL.txt       Quick Installation Guide
+  - UPDATING.txt      Update OpenSPARC sources to latest version
   - REQUIREMENTS.txt  System Requirements
   - SIMULATION.txt    Simulation Environment
   - SYNTHESIS.txt     Synthesis Environment

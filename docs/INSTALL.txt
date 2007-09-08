@@ -11,7 +11,8 @@ the "hdl" and "tools" subdirectories) and the root of the T1 design:
 the first one is mandatory, the second path is needed only if you
 want to update the SPARC Core source file bundled with this tarball
 with an updated version of the T1 design released by the OpenSPARC
-community (using the provided update_sparccore script file).
+community (to see how to update it, please read UPDATING.txt
+).
 
 After that just use on your GNU/Linux or Unix box a bash shell
 to source this file:
