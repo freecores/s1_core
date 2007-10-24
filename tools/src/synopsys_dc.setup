@@ -1,10 +1,10 @@
 /* setup the Setup...Defaults menu */
 designer = "NISung"
 company = "TSMC"
-search_path = { } 
+search_path = { /usr/design/techlibs/tsmc/digital/Front_End/timing_power/tcbn90lphpcg_150a }
 hdlin_translate_off_skip_text = TRUE
 link_library= { }
-target_library= { }
+target_library= { tcbn90lphpcgtc.db }
 symbol_library= { }
 default_schematic_options = "-size infinite"
 
