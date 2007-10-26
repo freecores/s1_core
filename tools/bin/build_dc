@@ -2,7 +2,6 @@
 
 cd $S1_ROOT/run/synth/dc
 rm -rf * .syn*  # Make clean
-cp ../../../tools/src/synopsys_dc.setup .synopsys_dc.setup
-cp ../../../tools/src/TSMC_naming_rule.script .
+ln -s -f ../../../tools/src/synopsys_dc.setup .synopsys_dc.setup
 dc_shell -xg_mode -tcl_mode -f $FILELIST_DC 2>&1 | tee synth.log
 
