@@ -1,6 +1,14 @@
 #!/bin/bash
 
-cd $S1_ROOT/run/sim/icarus
-rm -rf *
-iverilog -o testbench -c$FILELIST_ICARUS
+# Check that $S1_ROOT is not empty (provided by lain.ux)
+if [ -n "$S1_ROOT" ]; then
+  echo "Building testbench using Icarus simulator..."
+  cd $S1_ROOT/run/sim/icarus
+  rm -rf *
+  iverilog -o testbench -c$FILELIST_ICARUS
+  echo -e "Done!"
+else
+  echo "***ERROR***: S1_ROOT variable is undefined. Please refer to S1 Core" \
+       "installation document (docs/INSTALL.TXT) for more detail."
+fi
 
