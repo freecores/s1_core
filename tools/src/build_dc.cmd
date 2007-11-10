@@ -22,7 +22,7 @@ compile
 
 # Export
 
-write -format db -hierarchy -output "s1_top.db"
+write -format ddc -hierarchy -output "s1_top.ddc"
 write -format verilog -hierarchy -output "s1_top.v"
 
 # Report
