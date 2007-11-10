@@ -35,8 +35,6 @@
 * ========== Copyright Header End ============================================
 */
 
-#include "defines.h"
-	
 	!! Enable L2-ucache: Unused in S1 Core
 /*
 	setx	cregs_l2_ctl_reg_r64, %g1, %l1				!! aka "wr  %g0, 5, %asr26" "clr  %l1"
@@ -50,8 +48,16 @@
 */
 
 	!! Set LSU Diagnostic Register to use all ways for L1-icache and L1-dcache
-	setx	cregs_lsu_diag_reg_r64, %g1, %l1				!! aka "clr  %l1"
-	mov	0x10, %g1
+	
+        !!setx	cregs_lsu_diag_reg_r64, %g1, %l1		!!ho sostituito questa istruzione con la sua espansione (!! aka "clr  %l1")
+	sethi %hh(0x0),%g1
+	or    %g1,%hm(0x0),%g1
+	sllx  %g1,32,%g1
+	sethi %hi(0x0),%l1
+	or    %l1,%g1,%l1
+	or    %l1,%lo(0x0),%l1
+
+	mov	0x10, %g1							
 	stxa %l1, [%g1] (66)							!! aka "stxa	%l1, [%g1] ASI_LSU_DIAG_REG"
 
 	!! Set LSU Control Register to enable L1-icache and L1-dcache: not enabled in S1 Core
@@ -61,7 +67,54 @@
 */
 	!! Set hpstate.red = 0 and hpstate.enb = 1
 	rdhpr	%hpstate, %l1 
-	wrhpr	%l1, 0x820, %hpstate
+	and %l1,0x820,%l2
+	xor %l2,0x800,%l2
+	wrhpr %l1,%l2,%hpstate		!!questo meccanismo "dovrebbe" assicurarni red=0 enb=1
+				        
+	!!wrhpr	%l1, 0x820, %hpstate    !! in questo modo hpstate.red=1 altrimenti dovremmo usare 0x8000 inoltre troviamo red=1 e hpriv=0
+					!! cmq dipende da l1, dovrebbe fare l1 xor 100000100000
+					!!stiamo presumendo che red=1 e enb=0 precedentemente
+ 
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   !!momentaneamente ho tolto le istruzioni che ho aggiunto
+!!aggiunta dal file hboot_tlb_init.s
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  
+! init all itlb entries
+    !!    mov	0x30, %g1
+	!!mov	%g0, %g2
+!!itlb_init_loop:
+        !!stxa	%g0, [ %g1 ] 0x50
+        !!stxa	%g0, [ %g2 ] 0x55 !!pulisce data e tag entry del buffer per TLB
+
+	!!add	%g2, 8, %g2  	!!g2= somma 8 (byte) alla volta  (64 bit)
+	!!cmp	%g2, 0x200 	!!confronta con 512  (512*8=4096=0x1000), ma al max VA=0x7F8
+
+	!!bne	itlb_init_loop
+	!!nop
+! init all dtlb entries
+        !!mov	0x30, %g1
+	!!mov	%g0, %g2
+!!dtlb_init_loop:
+        !!stxa	%g0, [ %g1 ] 0x58
+        !!stxa	%g0, [ %g2 ] 0x5d
+
+	!!add	%g2, 8, %g2
+	!!cmp	%g2, 0x200
+	!!bne	dtlb_init_loop
+	!!nop
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Clear itlb/dtlb valid
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!stxa	%g0, [%g0] 0x60		! ASI_ITLB_INVALIDATE_ALL
+	!!mov	0x8, %g1
+	!!stxa	%g0, [%g0 + %g1] 0x60	! ASI_DTLB_INVALIDATE_ALL
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!fine aggiunta
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+
+
 
 	!! Initialize Interrupt Queue Registers: Currently disabled in S1 Core
 /*
@@ -113,7 +166,13 @@
 	stxa	%g0, [%g0 + %g1] 0x58
 
 	!! Enable error trap
-	setx	cregs_sparc_error_en_reg_r64, %g1, %l1			!! aka "mov  3, %l1"
+	!!setx	cregs_sparc_error_en_reg_r64, %g1, %l1	       !!ho sostituito questa istruzione con la sua espansione e costante=3(!!aka "mov  3, %l1")
+	sethi %hh(0x3),%g1
+	or    %g1,%hm(0x3),%g1
+	sllx  %g1,32,%g1
+	sethi %hi(0x3),%l1
+	or    %l1,%g1,%l1
+	or    %l1,%lo(0x3),%l1
 	stxa  %l1, [%g0] (75)						!! aka "stxa	%l1, [%g0] ASI_SPARC_ERROR_EN_REG"
 
 	!! Enable L2-ucache error trap:	Unused in S1 Core
@@ -133,38 +192,46 @@
         rd      %asr26, %l1
         set     0x0300, %g1				!! aka "sethi %hi(0x1c00), %g1" "or  %g1, 0x300, %g1"
         and     %l1, %g1, %l1
+
         srlx    %l1, 8, %l1				!! %l1 has thread ID
 
-	setx	part_id_list, %g1, %g2
+	!!setx	part_id_list, %g1, %g2
 	!! this instruction expands as
-	!! "sethi  %hi(0), %g1"
-	!! "sethi  %hi(0x4c000), %g2"
-	!! "mov  %g1, %g1"
-	!! "mov  %g2, %g2"
-	!! "sllx  %g1, 0x20, %g1"
-	!! "or  %g2, %g1, %g2"
+	 sethi  %hi(0), %g1
+	 sethi  %hi(0x4c000), %g2	!! THIS INSTRUCTION CONTAINS THE ADDRESS IN MEMORY
+	 mov  %g1, %g1
+	 mov  %g2, %g2
+	 sllx  %g1, 0x20, %g1
+	 or  %g2, %g1, %g2
 
         sllx    %l1, 3, %l1							!! offset - partition list
         ldx     [%g2 + %l1], %g2						!! %g2 contains partition ID
 	mov	0x80, %g1
-	stxa	%g2, [%g1] 0x58
+	stxa	%g2, [%g1] 0x58		!! BY FF - AFTER THIS INSTRUCTION WE GET TWO CONSECUTIVE ACCESSES
 
 	!! Set Hypervisor Trap Base Address
-	setx HV_TRAP_BASE_PA, %l0, %l7						!! sethi %hi(0x80000), %l7
+	!!setx HV_TRAP_BASE_PA, %l0, %l7				!!sostituita con la sua espansione e costante=0x80000(!!sethi %hi(0x80000), %l7)
+	sethi %hh(0x80000),%g1
+	or    %g1,%hm(0x80000),%g1
+	sllx  %g1,32,%g1
+	sethi %hi(0x80000),%l1
+	or    %l1,%g1,%l1
+	or    %l1,%lo(0x80000),%l1
+
 	wrhpr %l7, %g0, %htba
 
 	!! Load TSB config/base from memory and write to corresponding ASI's
 	!! set tsb-reg (4 at present) for one partition
 	!! 2 i-config, 2-dconfig
 
-	setx	tsb_config_base_list, %l0, %g1
+	!!setx	tsb_config_base_list, %l0, %g1		!!sostituita con le successive istruzioni
 	!! this instructions expands as
-	!! sethi  %hi(0), %l0
-	!! sethi  %hi(0x4c000), %g1
-	!! mov  %l0, %l0
-	!! or  %g1, 0x140, %g1
-	!! sllx  %l0, 0x20, %l0
-	!! or  %g1, %l0, %g1
+	 sethi  %hi(0), %l0
+	 sethi  %hi(0x4c000), %g1
+	 mov  %l0, %l0
+	 or  %g1, 0x140, %g1
+	 sllx  %l0, 0x20, %l0
+	 or  %g1, %l0, %g1
 	
 	sllx	%g2, 7, %g2					!! %g2 contains offset to tsb_config_base_list
 	add	%g1, %g2, %g1					!! %g1 contains pointer to tsb_config_base_list
@@ -218,6 +285,8 @@
 	stxa	%g0, [%o2] 0x57
 	stxa	%g0, [%o2] 0x5f
 
+
+
 	!! Initialize primary context register
 	mov 0x8, %l1
 	stxa %g0, [%l1] 0x21
@@ -235,18 +304,25 @@
 	mov  0xc, %l1
 	stxa  %l1, [%g0] (69)							!! aka "stxa	%l1, [%g0] ASI_LSU_CTL_REG"
 
-        setx	HPriv_Reset_Handler, %g1, %g2
+        !!setx	HPriv_Reset_Handler, %g1, %g2
 	!! this instructions expands as
-	!! sethi  %hi(0), %g1
-	!! sethi  %hi(0x144000), %g2
-	!! mov  %g1, %g1
-	!! mov  %g2, %g2
-	!! sllx  %g1, 0x20, %g1
-	!! or  %g2, %g1, %g2
+	 sethi  %hi(0), %g1
+	 sethi  %hi(0x144000), %g2
+	 mov  %g1, %g1
+	 mov  %g2, %g2
+	 sllx  %g1, 0x20, %g1
+	 or  %g2, %g1, %g2
 	
 	rdhpr	%hpstate, %g3
 	wrpr	1, %tl
-	setx	cregs_htstate_r64, %g1, %g4			!! aka "clr  %g4"
+	!!setx	cregs_htstate_r64, %g1, %g4			!!sostituita con la successiva istruzione (!! aka "clr  %g4")
+	sethi %hh(0x0),%g1
+	or    %g1,%hm(0x0),%g1
+	sllx  %g1,32,%g1
+	sethi %hi(0x0),%l1
+	or    %l1,%g1,%l1
+	or    %l1,%lo(0x0),%l1
+
 	wrhpr	%g4, %g0, %htstate
 	wrpr	0, %tl
 	mov     0x0, %o0		!! aka "clr %o0", don't delete since used in customized IMMU miss trap

@@ -105,7 +105,6 @@ module spc2wbm (
   reg[6:0] wbm2spc_interrupt_source;                                   // Encoded Interrupt Source
   reg wbm2spc_interrupt_new;                                           // New Interrupt Pending
    
-   
   /*
    * Wires
    */
@@ -202,11 +201,8 @@ module spc2wbm (
       wbm2spc_atomic <= 0;
       wbm2spc_pfl <= 0;
       wbm2spc_data <= 64'h10001;
-
-      // EDIT vvvv (uinitialized variables)
       wbm2spc_interrupt_source <= 7'h0;
       wbm2spc_interrupt_new <= 1'b0;
-      // EDIT ^^^^
 
       // Clear state machine
       state <= `STATE_WAKEUP;

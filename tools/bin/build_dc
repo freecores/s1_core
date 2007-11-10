@@ -2,6 +2,7 @@
 
 cd $S1_ROOT/run/synth/dc
 rm -rf * .syn*  # Make clean
+mkdir work
 ln -s -f ../../../tools/src/synopsys_dc.setup .synopsys_dc.setup
-dc_shell -xg_mode -tcl_mode -f $FILELIST_DC 2>&1 | tee synth.log
+dc_shell -tcl_mode -f $FILELIST_DC 2>&1 | tee synth.log
 

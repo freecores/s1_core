@@ -14,7 +14,7 @@ int main() {
   char* right;
 
   // To start from RAM address 0x00000400C0 (see linker.map)
-  printf("@%X\n", (0xC0>>3));
+  //printf("@%X\n", (0xC0>>3));
 
   // Parse the standard input
   while(!feof(stdin)) {

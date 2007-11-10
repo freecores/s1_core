@@ -72,6 +72,12 @@ sed -e 's/logic/logic_MAYBEARESERVEDWORD/g' $DST_DIR/sparc_ffu_ctl_visctl.v > $D
 mv $DST_DIR/temp.v $DST_DIR/sparc_ffu_ctl_visctl.v
 sed -e 's/$display(\"ILLEGAL_THR_STATE\"/\/\/$display(\"ILLEGAL_THR_STATE\"/g' sparc_ifu_thrfsm.v > $DST_DIR/temp.v
 mv $DST_DIR/temp.v $DST_DIR/sparc_ifu_thrfsm.v
+sed -e 's/(\* keep = "yes" \*)//g' $DST_DIR/bw_r_frf.v > $DST_DIR/temp.v
+mv $DST_DIR/temp.v $DST_DIR/bw_r_frf.v
+sed -e 's/synthesis translate_/synopsys translate_/g' $DST_DIR/bw_r_irf.v > $DST_DIR/temp.v
+mv $DST_DIR/temp.v $DST_DIR/bw_r_irf.v
+sed -e 's/initial onereg/\/\/initial onereg/g' $DST_DIR/bw_r_irf_register.v > $DST_DIR/temp.v
+mv $DST_DIR/temp.v $DST_DIR/bw_r_irf_register.v
 
 # After preprocessing we can safely delete the include directory
 rm -f $DST_DIR/include/*.*
