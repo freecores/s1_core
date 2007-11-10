@@ -325,7 +325,7 @@ module bw_r_irf (/*AUTOARG*/
   wire wr_en  = active_win_thr_rd_w_neg_wr_en & (~rst_tri_en | ~rst_tri_en_neg);
   wire wr_en2 = active_win_thr_rd_w2_neg_wr_en & (~rst_tri_en | ~rst_tri_en_neg);
 
-// synthesis translate_off
+// synopsys translate_off
   always @(posedge clk) begin
     if(wr_en) 
       $display("Write Port 1: %h %h", active_win_thr_rd_w_neg, thr_rd_w_neg );
@@ -344,7 +344,7 @@ module bw_r_irf (/*AUTOARG*/
       $display("Read Port 3: %h %h", irf_byp_rs3_data_d, thr_rs3);
     end
   end
-//synthesis translate_on
+//synopsys translate_on
    
 bw_r_irf_core bw_r_irf_core (
         .clk			(clk),
@@ -515,7 +515,7 @@ module bw_r_irf_core(
 	wire	[71:0]	rd_data30;
 	wire	[71:0]	rd_data31;
 
-// synthesis translate_off
+// synopsys translate_off
 always @(posedge clk) begin
 	if(ifu_exu_ren1_d | ifu_exu_ren2_d | ifu_exu_ren3_d) begin
 		if(thr_rs1[6:5] != 2'b00) begin
@@ -524,7 +524,7 @@ always @(posedge clk) begin
 		end
 	end
 end
-// synthesis translate_on
+// synopsys translate_on
    
    //reg [71:0]    active_window [127:0];// 32x4 72 bit registers
 

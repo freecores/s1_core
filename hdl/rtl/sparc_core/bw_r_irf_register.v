@@ -88,7 +88,7 @@ reg	[2:0]	rd_addr;
 reg	[2:0]	wr_addr;
 reg		save_d;
 
-  initial onereg = 72'b0;
+  //initial onereg = 72'b0;
   
   always @(negedge clk) begin
     rd_addr = restore_addr;

@@ -52,8 +52,8 @@ module bw_r_frf (/*AUTOARG*/
 
    wire [7:0]    regfile_index;
    //XST WA CR436004
-        (* keep = "yes" *) wire [7:0]   regfile_index_low;
-	(* keep = "yes" *) wire	[7:0]	regfile_index_high;
+         wire [7:0]   regfile_index_low;
+	 wire	[7:0]	regfile_index_high;
    //
 
 
