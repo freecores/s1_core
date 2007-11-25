@@ -49,7 +49,8 @@
 
 	!! Set LSU Diagnostic Register to use all ways for L1-icache and L1-dcache
 	
-        !!setx	cregs_lsu_diag_reg_r64, %g1, %l1		!!ho sostituito questa istruzione con la sua espansione (!! aka "clr  %l1")
+        !!setx	cregs_lsu_diag_reg_r64, %g1, %l1		!!la variabile (cregs_lsu_diag_reg_r64) contiene il valore 0 (defines.h)
+								!!ho sostituito questa istruzione con la sua espansione (!! aka "clr  %l1")
 	sethi %hh(0x0),%g1
 	or    %g1,%hm(0x0),%g1
 	sllx  %g1,32,%g1
@@ -58,7 +59,9 @@
 	or    %l1,%lo(0x0),%l1
 
 	mov	0x10, %g1							
-	stxa %l1, [%g1] (66)							!! aka "stxa	%l1, [%g1] ASI_LSU_DIAG_REG"
+	stxa %l1, [%g1] (66)		!! pone a zero il registro ASI_LSU_DIAG_REG ottenendo
+					!!l'abilitazione di tutte le vie della cache e l'utilizzo
+					!!dell'algoritmo "random replacement" (aka "stxa %l1, [%g1] ASI_LSU_DIAG_REG")
 
 	!! Set LSU Control Register to enable L1-icache and L1-dcache: not enabled in S1 Core
 /*
@@ -69,50 +72,49 @@
 	rdhpr	%hpstate, %l1 
 	and %l1,0x820,%l2
 	xor %l2,0x800,%l2
-	wrhpr %l1,%l2,%hpstate		!!questo meccanismo "dovrebbe" assicurarni red=0 enb=1
+	wrhpr %l1,%l2,%hpstate		!!questo meccanismo "dovrebbe" assicurarmi red=0 enb=1 mantenendo inalterati gli altri bit del registro
 				        
-	!!wrhpr	%l1, 0x820, %hpstate    !! in questo modo hpstate.red=1 altrimenti dovremmo usare 0x8000 inoltre troviamo red=1 e hpriv=0
-					!! cmq dipende da l1, dovrebbe fare l1 xor 100000100000
-					!!stiamo presumendo che red=1 e enb=0 precedentemente
+	!!wrhpr	%l1, 0x820, %hpstate    !! vecchia istruzione: otteniamo red=0 ed enb=1 solo se in precedenza avevamo red=1 ed enb=0
  
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   !!momentaneamente ho tolto le istruzioni che ho aggiunto
-!!aggiunta dal file hboot_tlb_init.s
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+!!istruzione aggiunte dal file  dal file hboot_tlb_init.s
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   
-! init all itlb entries
-    !!    mov	0x30, %g1
-	!!mov	%g0, %g2
-!!itlb_init_loop:
-        !!stxa	%g0, [ %g1 ] 0x50
-        !!stxa	%g0, [ %g2 ] 0x55 !!pulisce data e tag entry del buffer per TLB
+!! init all itlb entries
+    mov	0x30, %g1
+    mov	%g0, %g2
+ itlb_init_loop:                  
+        !!pulisce data e tag entry del buffer per TLB
+        stxa	%g0, [ %g1 ] 0x50  !!IMMU TLB Tag Access register=0
+        stxa	%g0, [ %g2 ] 0x55  !!IMMU TLB Data Access register=0, g2 assume valori  da 0 a 0x7f8
 
-	!!add	%g2, 8, %g2  	!!g2= somma 8 (byte) alla volta  (64 bit)
-	!!cmp	%g2, 0x200 	!!confronta con 512  (512*8=4096=0x1000), ma al max VA=0x7F8
+	add	%g2, 8, %g2    	!!g2= somma 8 (byte) alla volta  (64 bit)
+	cmp	%g2, 0x200 	!!confronta con 512  (512*8=4096=0x1000), (ma al max VA=0x7F8 ?)
 
-	!!bne	itlb_init_loop
-	!!nop
+	bne	itlb_init_loop  !!se g2!=da 0x200 ritorna all''inizio del loop
+	nop
 ! init all dtlb entries
-        !!mov	0x30, %g1
-	!!mov	%g0, %g2
-!!dtlb_init_loop:
-        !!stxa	%g0, [ %g1 ] 0x58
-        !!stxa	%g0, [ %g2 ] 0x5d
+        mov	0x30, %g1  
+	mov	%g0, %g2
+dtlb_init_loop:
+        stxa	%g0, [ %g1 ] 0x58  !!DMMU TLB Tag Access register=0
+        stxa	%g0, [ %g2 ] 0x5d  !!ASI_DTLB_DATA_ACCESS_REG(DMMU TLB Data Access)=0 g2 assume valori da 0 a 0x7f8
 
-	!!add	%g2, 8, %g2
-	!!cmp	%g2, 0x200
-	!!bne	dtlb_init_loop
-	!!nop
+	add	%g2, 8, %g2 !!incrementa g2 di 64 bit alla voltra
+	cmp	%g2, 0x200  !!confronta g2 con 0x200
+	bne	dtlb_init_loop !!se sono diversi ricomincia il loop
+	nop
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Clear itlb/dtlb valid
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	!!stxa	%g0, [%g0] 0x60		! ASI_ITLB_INVALIDATE_ALL
-	!!mov	0x8, %g1
-	!!stxa	%g0, [%g0 + %g1] 0x60	! ASI_DTLB_INVALIDATE_ALL
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!fine aggiunta
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+	stxa	%g0, [%g0] 0x60		! ASI_ITLB_INVALIDATE_ALL(IMMU TLB Invalidate register)=0
+	mov	0x8, %g1
+	stxa	%g0, [%g0 + %g1] 0x60	! ASI_DTLB_INVALIDATE_ALL(DMMU TLB Invalidate register)=0
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!da qui riprende il vecchio file boot.s
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
 
@@ -162,18 +164,24 @@
 
 	!! Clear L1-icache and L1-dcache SFSR
 	mov 	0x18, %g1
-	stxa	%g0, [%g0 + %g1] 0x50
-	stxa	%g0, [%g0 + %g1] 0x58
+	stxa	%g0, [%g0 + %g1] 0x50 !IMMU Synchronous Fault Status register=0
+	stxa	%g0, [%g0 + %g1] 0x58 !DMMU Synchronous Fault Status register=0
 
 	!! Enable error trap
-	!!setx	cregs_sparc_error_en_reg_r64, %g1, %l1	       !!ho sostituito questa istruzione con la sua espansione e costante=3(!!aka "mov  3, %l1")
+	!!setx	cregs_sparc_error_en_reg_r64, %g1, %l1	       !! aka "stxa	%l1, [%g0] ASI_SPARC_ERROR_EN_REG"
+							       !!ho sostituito questa istruzione con la sua espansione
+							       !!ponendo la costante cregs_sparc_error_en_reg_r64=3 (dal file defines.h)
+							       !!l'effetto dovrebbe essere "trap on correctable error" e "trap on uncorrectable error"
+							       !!(!!aka "mov  3, %l1")
+	!!inizio espansione
 	sethi %hh(0x3),%g1
 	or    %g1,%hm(0x3),%g1
 	sllx  %g1,32,%g1
 	sethi %hi(0x3),%l1
 	or    %l1,%g1,%l1
 	or    %l1,%lo(0x3),%l1
-	stxa  %l1, [%g0] (75)						!! aka "stxa	%l1, [%g0] ASI_SPARC_ERROR_EN_REG"
+	stxa  %l1, [%g0] (75)       !!mette il contenuto di l1 nel registro "SPARC Error Enable reg"
+	!!fine espansione						
 
 	!! Enable L2-ucache error trap:	Unused in S1 Core
 /*
@@ -188,43 +196,47 @@
 	stx	%l1, [%g1 + 0xc0]
 */
 	
-	!! Load Partition ID
-        rd      %asr26, %l1
+	!! Load Partition ID (permette a S.O. multipli di condividere lo stesso TLB)
+        rd      %asr26, %l1				!!%asr26 corrisponde allo Strand Status and Control register
         set     0x0300, %g1				!! aka "sethi %hi(0x1c00), %g1" "or  %g1, 0x300, %g1"
         and     %l1, %g1, %l1
 
         srlx    %l1, 8, %l1				!! %l1 has thread ID
 
-	!!setx	part_id_list, %g1, %g2
-	!! this instruction expands as
+	!!setx	part_id_list, %g1, %g2  (part_id_list viene definito nel file hboot.s)
+	!! this instruction expands as (preso dal file ACCESS.TXT)
+	!!inizio espansione
 	 sethi  %hi(0), %g1
-	 sethi  %hi(0x4c000), %g2	!! THIS INSTRUCTION CONTAINS THE ADDRESS IN MEMORY
+	 sethi  %hi(0x4c000), %g2
 	 mov  %g1, %g1
 	 mov  %g2, %g2
 	 sllx  %g1, 0x20, %g1
 	 or  %g2, %g1, %g2
+	!!fine espansione
 
         sllx    %l1, 3, %l1							!! offset - partition list
         ldx     [%g2 + %l1], %g2						!! %g2 contains partition ID
 	mov	0x80, %g1
-	stxa	%g2, [%g1] 0x58		!! BY FF - AFTER THIS INSTRUCTION WE GET TWO CONSECUTIVE ACCESSES
+	stxa	%g2, [%g1] 0x58							!!I/DMMU Partition ID=g2
 
 	!! Set Hypervisor Trap Base Address
-	!!setx HV_TRAP_BASE_PA, %l0, %l7				!!sostituita con la sua espansione e costante=0x80000(!!sethi %hi(0x80000), %l7)
+	!!setx HV_TRAP_BASE_PA, %l0, %l7		!!sostituita con la sua espansione e HV_TRAP_BASE_PA=0x80000(!!sethi %hi(0x80000), %l7)
+	!!inizio espansione
 	sethi %hh(0x80000),%g1
 	or    %g1,%hm(0x80000),%g1
 	sllx  %g1,32,%g1
 	sethi %hi(0x80000),%l1
 	or    %l1,%g1,%l1
 	or    %l1,%lo(0x80000),%l1
+	!!fine espansione
 
-	wrhpr %l7, %g0, %htba
+	wrhpr %l7, %g0, %htba                          !!i bit da 63-14 servono a selezionare il trap vector per un trap servito in Hyperprivileged mode
 
 	!! Load TSB config/base from memory and write to corresponding ASI's
 	!! set tsb-reg (4 at present) for one partition
 	!! 2 i-config, 2-dconfig
 
-	!!setx	tsb_config_base_list, %l0, %g1		!!sostituita con le successive istruzioni
+	!!setx	tsb_config_base_list, %l0, %g1		
 	!! this instructions expands as
 	 sethi  %hi(0), %l0
 	 sethi  %hi(0x4c000), %g1
@@ -232,7 +244,8 @@
 	 or  %g1, 0x140, %g1
 	 sllx  %l0, 0x20, %l0
 	 or  %g1, %l0, %g1
-	
+	!!fine espansione
+
 	sllx	%g2, 7, %g2					!! %g2 contains offset to tsb_config_base_list
 	add	%g1, %g2, %g1					!! %g1 contains pointer to tsb_config_base_list
 
@@ -282,8 +295,8 @@
 
 	!! Demap all itlb and dtlb
 	mov	0x80, %o2
-	stxa	%g0, [%o2] 0x57
-	stxa	%g0, [%o2] 0x5f
+	stxa	%g0, [%o2] 0x57			!!registro ASI_IMMU_DEMAP=0 (IMMU TLB demap)
+	stxa	%g0, [%o2] 0x5f			!!registro ASI_DMMU_DEMAP=0 (DMMU TLB demap)
 
 
 
@@ -302,8 +315,12 @@
 */
 	!! Set LSU Control Register to enable immu, dmmu but NOT icache, dcache
 	mov  0xc, %l1
-	stxa  %l1, [%g0] (69)							!! aka "stxa	%l1, [%g0] ASI_LSU_CTL_REG"
-
+	stxa  %l1, [%g0] (69)   			!!Load/Store Unit Control Register=1100 (aka "stxa %l1, [%g0] ASI_LSU_CTL_REG")
+							!!l''effetto dovrebbe essere: 
+							!! .dm=1 (DMMU ENABLE)
+							!! .Im=1 (IMMU ENABLE)
+							!! .dc=0 (dcache not enabled)
+							|| .ic=0 (icache not enabled)
         !!setx	HPriv_Reset_Handler, %g1, %g2
 	!! this instructions expands as
 	 sethi  %hi(0), %g1
@@ -312,22 +329,27 @@
 	 mov  %g2, %g2
 	 sllx  %g1, 0x20, %g1
 	 or  %g2, %g1, %g2
+	 !! fine espansione
 	
 	rdhpr	%hpstate, %g3
-	wrpr	1, %tl
-	!!setx	cregs_htstate_r64, %g1, %g4			!!sostituita con la successiva istruzione (!! aka "clr  %g4")
+	wrpr	1, %tl             !!livello trap corrente=1
+
+	!!setx	cregs_htstate_r64, %g1, %g4
+	!! this instructions expands as		!!sostituita con la successive istruzioni (da manuale) (!! aka "clr  %g4")
+	!! inizio espansione
 	sethi %hh(0x0),%g1
 	or    %g1,%hm(0x0),%g1
 	sllx  %g1,32,%g1
 	sethi %hi(0x0),%l1
 	or    %l1,%g1,%l1
 	or    %l1,%lo(0x0),%l1
+        !!fine espansione
 
-	wrhpr	%g4, %g0, %htstate
-	wrpr	0, %tl
+	wrhpr	%g4, %g0, %htstate	!! dovrebbe resettare il registro HTSTATE che mantiene lo stato hyperpriviliged dopo un trap
+	wrpr	0, %tl			!! trap level corrente=0 (No Trap)
 	mov     0x0, %o0		!! aka "clr %o0", don't delete since used in customized IMMU miss trap
         jmp	%g2
-	wrhpr	%g0, 0x800, %hpstate
+	wrhpr	%g0, 0x800, %hpstate    !!assicura il bit 11 del registro HPSTATE al valore 1 (per evitare comportamenti non previsti)
         nop
         nop
 
