@@ -28,7 +28,7 @@ write -format verilog -hierarchy -output "s1_top.v"
 
 # Report
 
-report_area > report_area.txt
+report_area -hierarchy > report_area.txt
 report_timing > report_timing.txt
 report_constraint -all_violators > report_constraint.txt
 
