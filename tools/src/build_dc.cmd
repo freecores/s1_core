@@ -5,15 +5,16 @@ elaborate s1_top
 link
 uniquify
 check_design
+flatten s1_top
 
 # Constraints
 
-create_clock -name "sys_clock_i" -period 2.0 -waveform {0 1.0} [get_ports "sys_clock_i"]
+create_clock -name "sys_clock_i" -period 4.0 -waveform {0 1.0} [get_ports "sys_clock_i"]
 set_dont_touch_network [get_clocks "sys_clock_i"]
-set_input_delay 1.25 -max -rise -clock "sys_clock_i" [get_ports "sys_reset_i"]
-set_input_delay 1.25 -max -fall -clock "sys_clock_i" [get_ports "sys_reset_i"]
-set_output_delay 1.25 -clock sys_clock_i -max -rise [all_outputs]
-set_output_delay 1.25 -clock sys_clock_i -max -fall [all_outputs]
+set_input_delay 2.50 -max -rise -clock "sys_clock_i" [get_ports "sys_reset_i"]
+set_input_delay 2.50 -max -fall -clock "sys_clock_i" [get_ports "sys_reset_i"]
+set_output_delay 2.50 -clock sys_clock_i -max -rise [all_outputs]
+set_output_delay 2.50 -clock sys_clock_i -max -fall [all_outputs]
 set_wire_load_mode "enclosed" 
 
 # Compile
