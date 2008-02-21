@@ -1,3 +1,4 @@
+
 # The Tcl script under $S1_ROOT/tools/src/build_dc.cmd is attached at the end of the filelist for DC;
 # if you modify this file *REMEMBER* to run 'update_filelist' or you'll run the old version!!!
 
@@ -5,11 +6,10 @@ elaborate s1_top
 link
 uniquify
 check_design
-flatten s1_top
 
 # Constraints
 
-create_clock -name "sys_clock_i" -period 4.0 -waveform {0 1.0} [get_ports "sys_clock_i"]
+create_clock -name "sys_clock_i" -period 4.0 -waveform {0 2.0} [get_ports "sys_clock_i"]
 set_dont_touch_network [get_clocks "sys_clock_i"]
 set_input_delay 2.50 -max -rise -clock "sys_clock_i" [get_ports "sys_reset_i"]
 set_input_delay 2.50 -max -fall -clock "sys_clock_i" [get_ports "sys_reset_i"]
