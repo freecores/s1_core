@@ -2,35 +2,38 @@
 # The Tcl script under $S1_ROOT/tools/src/build_dc.cmd is attached at the end of the filelist for DC;
 # if you modify this file *REMEMBER* to run 'update_filelist' or you'll run the old version!!!
 
-elaborate s1_top
+# Technology-independent elaboration and linking
+
+set active_design s1_top
+elaborate $active_design
+current_design $active_design
 link
 uniquify
 check_design
 
-# Constraints
+# Constraints and mapping on target library
 
-create_clock -name "sys_clock_i" -period 4.0 -waveform {0 2.0} [get_ports "sys_clock_i"]
-set_dont_touch_network [get_clocks "sys_clock_i"]
-set_input_delay 2.50 -max -rise -clock "sys_clock_i" [get_ports "sys_reset_i"]
-set_input_delay 2.50 -max -fall -clock "sys_clock_i" [get_ports "sys_reset_i"]
-set_output_delay 2.50 -clock sys_clock_i -max -rise [all_outputs]
-set_output_delay 2.50 -clock sys_clock_i -max -fall [all_outputs]
-set_wire_load_mode "enclosed" 
-
-# Compile
-
+create_clock -period 4.0 -waveform [list 0 2.0] sys_clock_i
+set_input_delay 2.0 -clock sys_clock_i -max [all_inputs]
+set_output_delay 1.0 -clock sys_clock_i -max [all_outputs]
+set_dont_touch_network [list sys_clock_i sys_reset_i]
+set_drive 0 [list sys_clock_i sys_reset_i]
+set_wire_load_mode enclosed
+set_max_area 0
+set_fix_multiple_port_nets -buffer_constants -all
 compile
 
-# Export
+# Export the mapped design
 
-write -format ddc -hierarchy -output "s1_top.ddc"
-write -format verilog -hierarchy -output "s1_top.v"
+remove_unconnected_ports [find -hierarchy cell {"*"}]
+write -format ddc -hierarchy -output $active_design.ddc
+write -format verilog -hierarchy -output $active_design.sv
 
-# Report
+# Report area and timing
 
-report_area -hierarchy > report_area.txt
-report_timing > report_timing.txt
-report_constraint -all_violators > report_constraint.txt
+report_area -hierarchy > report_area.rpt
+report_timing > report_timing.rpt
+report_constraint -all_violators > report_constraint.rpt
 
 quit
 
