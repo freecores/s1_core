@@ -4,7 +4,7 @@
 
 # Variables setting
 
-set sub_modules {ifu lsu exu ffu mul spu tlu s1_top}
+set sub_modules {sparc_ifu lsu sparc_exu sparc_ffu sparc_mul_top spu tlu s1_top}
 set sub_clocks  {rclk clk sys_clock_i}
 set sub_resets  {grst_l arst_l sys_reset_i}
 
@@ -20,12 +20,12 @@ foreach active_design $sub_modules {
   create_clock -period 5.0 -waveform [list 0 2.5] [get_ports $sub_clocks]
   set_input_delay  1.8 -clock [get_clocks $sub_clocks] -max [all_inputs]
   set_output_delay 1.2 -clock [get_clocks $sub_clocks] -max [all_outputs]
-  set_dont_touch_network [list $sub_clocks $sub_resets]
-  set_drive    0         [list $sub_clocks $sub_resets]
+  set_dont_touch_network [concat $sub_clocks $sub_resets]
+  set_drive    0         [concat $sub_clocks $sub_resets]
   set_max_area 0
   set_wire_load_mode enclosed
   set_fix_multiple_port_nets -buffer_constants -all
-  compile -map_effort low
+  compile
 
   # Export the mapped design
   remove_unconnected_ports [find -hierarchy cell {"*"}]
