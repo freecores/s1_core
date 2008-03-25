@@ -320,7 +320,7 @@ dtlb_init_loop:
 							!! .dm=1 (DMMU ENABLE)
 							!! .Im=1 (IMMU ENABLE)
 							!! .dc=0 (dcache not enabled)
-							|| .ic=0 (icache not enabled)
+							!! .ic=0 (icache not enabled)
         !!setx	HPriv_Reset_Handler, %g1, %g2
 	!! this instructions expands as
 	 sethi  %hi(0), %g1
