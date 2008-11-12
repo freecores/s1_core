@@ -43,7 +43,10 @@ find $DST_DIR -name "*_flat.v" -exec rm -f {} \;
 find $DST_DIR -name "*_flat_nc.v" -exec rm -f {} \;
 find $DST_DIR -name "*_hier.v" -exec rm -f {} \;
 
-# Remove unused files (according to liuyadong)
+# Also remove SPU files
+rm -f $DST_DIR/*spu*.v
+
+# Remove other unused files (according to liuyadong)
 cd $DST_DIR
 rm bw_r_l2t.v bw_r_cm16x40.v bw_r_cm16x40b.v bw_r_dcm.v bw_r_efa.v bw_r_l2d.v bw_r_l2d_32k.v \
     bw_r_l2d_rep_bot.v bw_r_l2d_rep_top.v bw_r_rf16x128d.v bw_r_rf32x108.v bw_rf_16x65.v bw_rf_16x81.v \
@@ -107,6 +110,9 @@ mv -f $DST_DIR/sparc_ifu_TMP.v $DST_DIR/sparc_ifu.v
 sed -e 's/ffu_ifu_stallreq,/ffu_ifu_stallreq, wbm_spc_stallreq,/g' $DST_DIR/sparc_ifu_fcl.v |
   sed -e 's/assign all_stallreq = ifq_fcl_stallreq/assign all_stallreq = ifq_fcl_stallreq | wbm_spc_stallreq/g' > $DST_DIR/sparc_ifu_fcl_TMP.v
 mv -f $DST_DIR/sparc_ifu_fcl_TMP.v $DST_DIR/sparc_ifu_fcl.v
+
+# This is a temporary hack to take a top-level SPARC Core with the SPU instance removed
+cp -f $S1_ROOT/tools/src/sparc.v $DST_DIR
 
 # Copy also behavioral libraries used for RTL simulations
 DST_DIR=$S1_ROOT/hdl/behav/sparc_libs
