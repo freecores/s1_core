@@ -86,7 +86,8 @@ module s1_top (
   wire [4:0] pcx_spc_grant_px; // pcx to processor grant info  
   wire       cpx_spc_data_rdy_cx2; // cpx data inflight to sparc  
   wire [`CPX_WIDTH-1:0] cpx_spc_data_cx2;     // cpx to sparc data packet
-  wire wbm_spc_stallreq;              // Stall request
+  wire wbm_spc_stall;               // Stall requests
+  wire wbm_spc_resume;              // Resume requests
 
   wire [3:0]  const_cpuid;
   wire [7:0]  const_maskid;           // To ifu of sparc_ifu.v
@@ -159,7 +160,8 @@ module s1_top (
     .pcx_spc_grant_px(pcx_spc_grant_px),
     .cpx_spc_data_rdy_cx2(cpx_spc_data_rdy_cx2),
     .cpx_spc_data_cx2(cpx_spc_data_cx2),
-    .wbm_spc_stallreq(wbm_spc_stallreq),
+    .wbm_spc_stall(wbm_spc_stall),
+    .wbm_spc_resume(wbm_spc_resume),
     .const_cpuid(const_cpuid),
     .const_maskid(const_maskid),
     .ctu_tck(ctu_tck),
@@ -212,7 +214,8 @@ module s1_top (
     .spc_grant_o(pcx_spc_grant_px),
     .spc_ready_o(cpx_spc_data_rdy_cx2),
     .spc_packetin_o(cpx_spc_data_cx2),
-    .spc_stallreq_o(wbm_spc_stallreq),
+    .spc_stall_o(wbm_spc_stall),
+    .spc_resume_o(wbm_spc_resume),
 
     // Top-level Wishbone Interconnect inputs
     .wbm_ack_i(wbm_ack_i),
