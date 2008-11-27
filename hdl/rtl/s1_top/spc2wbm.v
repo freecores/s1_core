@@ -26,58 +26,46 @@
 `include "s1_defs.h"
 
 module spc2wbm (
-    sys_clock_i, sys_reset_i, sys_interrupt_source_i,
-    spc_req_i, spc_atom_i, spc_packetout_i,
-    spc_grant_o, spc_ready_o, spc_packetin_o, spc_stallreq_o,
-    wbm_ack_i, wbm_data_i,
-    wbm_cycle_o, wbm_strobe_o, wbm_we_o, wbm_addr_o, wbm_data_o, wbm_sel_o
+
+    /*
+     * Inputs
+     */
+
+    // System inputs
+    input sys_clock_i,                            // System Clock
+    input sys_reset_i,                            // System Reset
+    input[5:0] sys_interrupt_source_i,            // Encoded Interrupt Source
+
+    // SPARC-side inputs connected to the PCX (Processor-to-Cache Xbar) outputs of the SPARC Core
+    input[4:0] spc_req_i,                         // Request
+    input spc_atom_i,                             // Atomic Request
+    input[(`PCX_WIDTH-1):0] spc_packetout_i,      // Outgoing Packet
+
+    // Wishbone Master interface inputs
+    input wbm_ack_i,                              // Ack
+    input[(`WB_DATA_WIDTH-1):0] wbm_data_i,       // Data In
+
+    /*
+     * Outputs
+     */
+
+    // SPARC-side outputs connected to the CPX (Cache-to-Processor Xbar) inputs of the SPARC Core
+    output reg[4:0] spc_grant_o,                  // Grant
+    output reg spc_ready_o,                       // Ready
+    output reg[`CPX_WIDTH-1:0] spc_packetin_o,    // Incoming Packet
+    output reg spc_stall_o,                       // Stall Requests
+    output reg spc_resume_o,                      // Resume Requests
+
+    // Wishbone Master interface outputs
+    output reg wbm_cycle_o,                       // Cycle Start
+    output reg wbm_strobe_o,                      // Strobe Request
+    output reg wbm_we_o,                          // Write Enable
+    output reg[`WB_ADDR_WIDTH-1:0] wbm_addr_o,    // Address Bus
+    output reg[`WB_DATA_WIDTH-1:0] wbm_data_o,    // Data Out
+    output reg[`WB_DATA_WIDTH/8-1:0] wbm_sel_o    // Select Output
+
   );
 
-  /*
-   * Inputs
-   */
-
-  // System inputs
-  input sys_clock_i;                            // System Clock
-  input sys_reset_i;                            // System Reset
-  input[5:0] sys_interrupt_source_i;            // Encoded Interrupt Source
-
-  // SPARC-side inputs connected to the PCX (Processor-to-Cache Xbar) outputs of the SPARC Core
-  input[4:0] spc_req_i;                         // Request
-  input spc_atom_i;                             // Atomic Request
-  input[(`PCX_WIDTH-1):0] spc_packetout_i;      // Outgoing Packet
-
-  // Wishbone Master interface inputs
-  input wbm_ack_i;                              // Ack
-  input[(`WB_DATA_WIDTH-1):0] wbm_data_i;       // Data In
-
-  /*
-   * Registered Outputs
-   */
-
-  // SPARC-side outputs connected to the CPX (Cache-to-Processor Xbar) inputs of the SPARC Core
-  output[4:0] spc_grant_o;                      // Grant
-  reg[4:0] spc_grant_o;                         // Grant
-  output spc_ready_o;                           // Ready
-  reg spc_ready_o;                              // Ready
-  output[`CPX_WIDTH-1:0] spc_packetin_o;        // Incoming Packet
-  reg[`CPX_WIDTH-1:0] spc_packetin_o;           // Incoming Packet
-  output spc_stallreq_o;                        // Stall Request
-  reg spc_stallreq_o;                           // Stall Request
-
-  // Wishbone Master interface outputs
-  output wbm_cycle_o;                           // Cycle Start
-  reg wbm_cycle_o;                              // Cycle Start
-  output wbm_strobe_o;                          // Strobe Request
-  reg wbm_strobe_o;                             // Strobe Request
-  output wbm_we_o;                              // Write Enable
-  reg wbm_we_o;                                 // Write Enable
-  output[`WB_ADDR_WIDTH-1:0] wbm_addr_o;        // Address Bus
-  reg[`WB_ADDR_WIDTH-1:0] wbm_addr_o;           // Address Bus
-  output[`WB_DATA_WIDTH-1:0] wbm_data_o;        // Data Out
-  reg[`WB_DATA_WIDTH-1:0] wbm_data_o;           // Data Out
-  output[`WB_DATA_WIDTH/8-1:0] wbm_sel_o;       // Select Output
-  reg[`WB_DATA_WIDTH/8-1:0] wbm_sel_o;          // Select Output
 
   /*
    * Registers
@@ -177,7 +165,8 @@ module spc2wbm (
       spc_grant_o <= 5'b00000;
       spc_ready_o <= 0;
       spc_packetin_o <= 0;
-      spc_stallreq_o <= 0;
+      spc_stall_o <= 0;
+      spc_resume_o <= 0;
 
       // Clear Wishbone Master interface outputs
       wbm_cycle_o <= 0;
@@ -241,7 +230,7 @@ module spc2wbm (
           spc_packetin_o <= 0;
 
           // Stall other requests from the SPARC Core
-          spc_stallreq_o <= 1;
+          spc_stall_o <= 1;
 
           // Latch target region and atomicity
           spc2wbm_region <= spc_req_i;
@@ -269,9 +258,6 @@ module spc2wbm (
           wbm2spc_atomic <= 0;
           wbm2spc_pfl <= 0;	   
 
-          // Stall other requests from the SPARC Core
-          spc_stallreq_o <= 1;
-
         // Next cycle see if there's an int to be forwarded to the Core
         end else if(wbm2spc_interrupt_source!=6'b000000 && wbm2spc_interrupt_new) begin
 
@@ -282,9 +268,6 @@ module spc2wbm (
           spc_ready_o <= 1;
           spc_packetin_o <= wbm2spc_packet;
 
-          // Stall other requests from the SPARC Core
-          spc_stallreq_o <= 1;
-
           // Stay in this state
           state <= `STATE_IDLE;
 
@@ -294,7 +277,10 @@ module spc2wbm (
           // Clear previously modified outputs
           spc_ready_o <= 0;
           spc_packetin_o <= 0;
-          spc_stallreq_o <= 0;
+
+	  // Clear stall/resume signals
+          spc_stall_o <= 0;
+	  spc_resume_o <= 0;
 
           // Stay in this state
           state <= `STATE_IDLE;
@@ -313,6 +299,9 @@ module spc2wbm (
         // Grant the request to the SPARC Core
         spc_grant_o <= spc2wbm_region;
 
+        // Clear the stall signal
+        spc_stall_o <= 0; 
+	 
 // synopsys translate_off
         // Print details of SPARC Core request
 `ifdef DEBUG
@@ -645,6 +634,9 @@ module spc2wbm (
         // Return the packet to the SPARC Core
         spc_ready_o <= 1;
         spc_packetin_o <= wbm2spc_packet;
+
+        // Resume requests
+        spc_resume_o <= 1;
 
         // Unconditional state change
         state <= `STATE_IDLE;
