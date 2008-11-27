@@ -99,19 +99,37 @@ if(test $1 == "-me") then
 fi
 
 # Hack the SPARC Core to add the external stall input from the bridge
-sed -e 's/pcx_spc_grant_px,/pcx_spc_grant_px, wbm_spc_stallreq,/g' $DST_DIR/sparc.v |
-  sed -e 's/pcx_spc_grant_px;/pcx_spc_grant_px; input wbm_spc_stallreq;/g' |
-  sed -e 's/sparc_ifu ifu(/sparc_ifu ifu( .wbm_spc_stallreq(wbm_spc_stallreq),/g' > $DST_DIR/sparc_TMP.v
-mv -f $DST_DIR/sparc_TMP.v $DST_DIR/sparc.v
-sed -e 's/ffu_ifu_stallreq,/ffu_ifu_stallreq, wbm_spc_stallreq,/g' $DST_DIR/sparc_ifu.v |
-  sed -e 's/ffu_ifu_stallreq;/ffu_ifu_stallreq; input wbm_spc_stallreq;/g' |
-  sed -e 's/sparc_ifu_fcl fcl(/sparc_ifu_fcl fcl( .wbm_spc_stallreq(wbm_spc_stallreq),/g' > $DST_DIR/sparc_ifu_TMP.v
-mv -f $DST_DIR/sparc_ifu_TMP.v $DST_DIR/sparc_ifu.v
-sed -e 's/ffu_ifu_stallreq,/ffu_ifu_stallreq, wbm_spc_stallreq,/g' $DST_DIR/sparc_ifu_fcl.v |
-  sed -e 's/assign all_stallreq = ifq_fcl_stallreq/assign all_stallreq = ifq_fcl_stallreq | wbm_spc_stallreq/g' > $DST_DIR/sparc_ifu_fcl_TMP.v
-mv -f $DST_DIR/sparc_ifu_fcl_TMP.v $DST_DIR/sparc_ifu_fcl.v
+# Cookbook from book "OpenSPARC Internals", paragraph 6.8
 
-# This is a temporary hack to take a top-level SPARC Core with the SPU instance removed
+# Top-level of SPARC Core (s1_top.sparc)
+sed -e 's/pcx_spc_grant_px,/pcx_spc_grant_px,wbm_spc_stall,wbm_spc_resume,/g' $DST_DIR/sparc.v |
+  sed -e 's/pcx_spc_grant_px;/pcx_spc_grant_px;input wbm_spc_stall;input wbm_spc_resume;/g' |
+  sed -e 's/sparc_ifu ifu(/sparc_ifu ifu(.wbm_spc_stall(wbm_spc_stall),.wbm_spc_resume(wbm_spc_resume),/g' > $DST_DIR/sparc_TMP.v
+mv -f $DST_DIR/sparc_TMP.v $DST_DIR/sparc.v
+
+# Fetch unit (s1_top.sparc.ifu)
+sed -e 's/ffu_ifu_stallreq,/ffu_ifu_stallreq,wbm_spc_stall,wbm_spc_resume,/g' $DST_DIR/sparc_ifu.v |
+  sed -e 's/ffu_ifu_stallreq;/ffu_ifu_stallreq;input wbm_spc_stall;input wbm_spc_resume;/g' |
+  sed -e 's/sparc_ifu_swl swl(/sparc_ifu_swl swl(.wbm_spc_stall(wbm_spc_stall),.wbm_spc_resume(wbm_spc_resume),/g' > $DST_DIR/sparc_ifu_TMP.v
+mv -f $DST_DIR/sparc_ifu_TMP.v $DST_DIR/sparc_ifu.v
+
+# Switch logic unit (s1_top.sparc.ifu.swl)
+sed -e 's/thr_config_in_m,/thr_config_in_m,wbm_spc_stall,wbm_spc_resume,/g' $DST_DIR/sparc_ifu_swl.v |
+  sed -e 's/thr_config_in_m;/thr_config_in_m;input wbm_spc_stall;input wbm_spc_resume;wire wait_state;/g' |
+  sed -e 's/sparc_ifu_thrcmpl compl(/sparc_ifu_thrcmpl compl(.wbm_spc_stall(wbm_spc_stall),.wbm_spc_resume(wbm_spc_resume),.wait_state(wait_state),/g' |
+  sed -e 's/(~wm_stbwait | stb_retry);/(~wm_stbwait|stb_retry)\&(~wait_state|wbm_spc_resume);/g' |
+  sed -e 's/wm_stbwait & ~stb_retry);/wm_stbwait \& ~stb_retry|wait_state \& ~wbm_spc_resume);/g' > $DST_DIR/sparc_ifu_swl_TMP.v
+mv -f $DST_DIR/sparc_ifu_swl_TMP.v $DST_DIR/sparc_ifu_swl.v
+
+# Stall completion logic (s1_top.sparc.ifu.swl.compl)
+sed -e 's/clear_wmo_e,/clear_wmo_e,wbm_spc_stall,wbm_spc_resume,wait_state,/g' $DST_DIR/sparc_ifu_thrcmpl.v |
+  sed -e 's/clear_wmo_e;/clear_wmo_e;input wbm_spc_stall;input wbm_spc_resume;output wait_state;wire wait_next;/g' |
+  sed -e 's/endmodule/assign wait_next=wbm_spc_stall|(wait_state \& ~wbm_spc_resume);\nendmodule/g' |
+  sed -e 's/endmodule/dffr wait_ff(.din(wait_next),.q(wait_state),.clk(clk),.rst(reset),.se(se),.si(),.so());\nendmodule/g' |
+  sed -e 's/wm_stbwait));/wm_stbwait|wait_state));/g' > $DST_DIR/sparc_ifu_thrcmpl_TMP.v
+mv -f $DST_DIR/sparc_ifu_thrcmpl_TMP.v $DST_DIR/sparc_ifu_thrcmpl.v
+
+# This is a temporary hack to take a top-level SPARC Core with the SPU instance removed by-hand (ifdef is wrong)
 cp -f $S1_ROOT/tools/src/sparc.v $DST_DIR
 
 # Copy also behavioral libraries used for RTL simulations
