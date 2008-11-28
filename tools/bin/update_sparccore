@@ -126,6 +126,10 @@ sed -e 's/clear_wmo_e,/clear_wmo_e,wbm_spc_stall,wbm_spc_resume,wait_state,/g' $
   sed -e 's/clear_wmo_e;/clear_wmo_e;input wbm_spc_stall;input wbm_spc_resume;output wait_state;wire wait_next;/g' |
   sed -e 's/endmodule/assign wait_next=wbm_spc_stall|(wait_state \& ~wbm_spc_resume);\nendmodule/g' |
   sed -e 's/endmodule/dffr wait_ff(.din(wait_next),.q(wait_state),.clk(clk),.rst(reset),.se(se),.si(),.so());\nendmodule/g' |
+  sed -e 's/assign completion/assign completion[0]/g' |
+  sed -e 's/endmodule/assign completion[1]=completion[0];\nendmodule/g' |
+  sed -e 's/endmodule/assign completion[2]=completion[0];\nendmodule/g' |
+  sed -e 's/endmodule/assign completion[3]=completion[0];\nendmodule/g' |
   sed -e 's/wm_stbwait));/wm_stbwait|wait_state));/g' > $DST_DIR/sparc_ifu_thrcmpl_TMP.v
 mv -f $DST_DIR/sparc_ifu_thrcmpl_TMP.v $DST_DIR/sparc_ifu_thrcmpl.v
 
