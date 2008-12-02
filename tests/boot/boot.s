@@ -35,87 +35,65 @@
 * ========== Copyright Header End ============================================
 */
 
-	!! Enable L2-ucache: Unused in S1 Core
+	!! Enable L2-ucache: currently unused in S1 Core
 /*
-	setx	cregs_l2_ctl_reg_r64, %g1, %l1				!! aka "wr  %g0, 5, %asr26" "clr  %l1"
+	!! SunStudio version
+        setx    cregs_l2_ctl_reg_r64, %g1, %l1
+	mov     0xa9, %g1
+	sllx    %g1, 32, %g1
+	stx     %l1, [%g1 + 0x00]
+	stx     %l1, [%g1 + 0x40]
+	stx     %l1, [%g1 + 0x80]
+	stx     %l1, [%g1 + 0xc0]
+*/
+
+/*
+	!! GCC version
+	wr  %g0, 5, %asr26
+	clr  %l1
 	mov	0xa9, %g1
 	sllx	%g1, 32, %g1
-
 	stx	%l1, [%g1 + 0x00]
 	stx	%l1, [%g1 + 0x40]
 	stx	%l1, [%g1 + 0x80]
 	stx	%l1, [%g1 + 0xc0]
 */
 
-	!! Set LSU Diagnostic Register to use all ways for L1-icache and L1-dcache
-	
-        !!setx	cregs_lsu_diag_reg_r64, %g1, %l1
-	!! cregs_lsu_diag_reg_r64 has value 0 in file defines.h;
-	!! this instruction has been expanded to:
-	sethi %hh(0x0),%g1
-	or    %g1,%hm(0x0),%g1
-	sllx  %g1,32,%g1
-	sethi %hi(0x0),%l1
-	or    %l1,%g1,%l1
-	or    %l1,%lo(0x0),%l1
-
-	!! clear to zero the register ASI_LSU_DIAG_REG thus enabling all ways of cache and using the "random replacement" algorithm
-	mov	0x10, %g1							
-	stxa %l1, [%g1] (66)
-
-	!! Set LSU Control Register to enable L1-icache and L1-dcache: not enabled in S1 Core
+	!! Set the LSU Diagnostic Register to enable all ways for L1-icache and L1-dcache
+	!! and using the "random replacement" algorithm
 /*
- 	setx	(CREGS_LSU_CTL_REG_IC | (CREGS_LSU_CTL_REG_DC << 1)), %g1, %l1	!! aka "mov  3, %l1"
-	stxa  %l1, [ %g0 ] (69)							!! aka "stxa	%l1, [%g0] ASI_LSU_CTL_REG"
+	!! SunStudio version
+        setx    cregs_lsu_diag_reg_r64, %g1, %l1
+        mov     0x10, %g1
+        stxa    %l1, [%g1] ASI_LSU_DIAG_REG
+*/	
+	!! GCC version
+	mov   0x10, %g1							
+	stxa  %l1, [%g1] (66)
+
+	!! Set the LSU Control Register to enable L1-icache and L1-dcache
+/*
+	!! SunStudio version
+	setx    (CREGS_LSU_CTL_REG_IC | (CREGS_LSU_CTL_REG_DC << 1)), %g1, %l1
+	stxa    %l1, [%g0] ASI_LSU_CTL_REG
 */
+        !! GCC version
+	mov  3, %l1
+	stxa  %l1, [%g0] (69)
 
 	!! Set hpstate.red = 0 and hpstate.enb = 1
+/*
+	!! SunStudio version
+	rdhpr   %hpstate, %l1
+	wrhpr   %l1, 0x820, %hpstate
+*/
+	!! GCC version
 	rdhpr	%hpstate, %l1 
 	and %l1,0x820,%l2
 	xor %l2,0x800,%l2
-	wrhpr %l1,%l2,%hpstate		!! this mechanism should ensure red=0 and enb=1 leaving the other 2 bits of the register unchanged;
-	!!wrhpr	%l1, 0x820, %hpstate    !! with the old instruction we got red=0 and enb=1 only if previously they were red=1 and enb=0
- 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!! Instructions added from file hboot_tlb_init.s !!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  
-!! Init all itlb entries
-    mov	0x30, %g1
-    mov	%g0, %g2
-itlb_init_loop:                  
-        !! clear data and tag entries of the TLB buffer
-        stxa	%g0, [ %g1 ] 0x50  	!! IMMU TLB Tag Access register=0
-        stxa	%g0, [ %g2 ] 0x55  	!! IMMU TLB Data Access register=0, g2 values from 0x000 to 0x7f8
+	wrhpr %l1,%l2,%hpstate		!! ensure red=0 and enb=1 leaving the other 2 bits of the register unchanged
 
-	add	%g2, 8, %g2    		!! increment the g2 register 8 bytes every time (64 bits)
-	cmp	%g2, 0x200 		!! compare g2 with 512 (512*8=4096=0x1000), but max VA=0x7F8
-	bne	itlb_init_loop  	!! if (g2!=512) then run another loop
-	nop
-
-!! Init all dtlb entries
-        mov	0x30, %g1  
-	mov	%g0, %g2
-dtlb_init_loop:
-        stxa	%g0, [ %g1 ] 0x58  	!! DMMU TLB Tag Access register=0
-        stxa	%g0, [ %g2 ] 0x5d  	!! ASI_DTLB_DATA_ACCESS_REG(DMMU TLB Data Access) is 0, g2 values from 0x000 to 0x7f8
-
-	add	%g2, 8, %g2 		!! increment the g2 register 8 bytes every time (64 bits)
-	cmp	%g2, 0x200  		!! compare g2 with 512
-	bne	dtlb_init_loop 		!! if (g2!=512) then run another loop
-	nop
-
-!! Clear itlb/dtlb valid
-	stxa	%g0, [%g0] 0x60		!! ASI_ITLB_INVALIDATE_ALL(IMMU TLB Invalidate register)=0
-	mov	0x8, %g1
-	stxa	%g0, [%g0 + %g1] 0x60	!! ASI_DTLB_INVALIDATE_ALL(DMMU TLB Invalidate register)=0
-
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!! End of instrted instructions, from here we are again in old file boot.s !!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-	!! Initialize Interrupt Queue Registers: Currently disabled in S1 Core
+	!! Initialize Interrupt Queue Registers: currently unused in S1 Core
 /*
 	wr %g0, 0x25, %asi
 
@@ -161,12 +139,17 @@ dtlb_init_loop:
 
 	!! Clear L1-icache and L1-dcache SFSR
 	mov 	0x18, %g1
-	stxa	%g0, [%g0 + %g1] 0x50 !IMMU Synchronous Fault Status register=0
-	stxa	%g0, [%g0 + %g1] 0x58 !DMMU Synchronous Fault Status register=0
+	stxa	%g0, [%g0 + %g1] 0x50			!! IMMU Synchronous Fault Status register=0
+	stxa	%g0, [%g0 + %g1] 0x58			!! DMMU Synchronous Fault Status register=0
 
-	!! Enable error trap
-	!! setx	cregs_sparc_error_en_reg_r64, %g1, %l1
-	!! this instruction has been expanded using constant value cregs_sparc_error_en_reg_r64=3 (from file defines.h)
+        !! Enable error trap
+/*
+	!! SunStudio version
+        setx    cregs_sparc_error_en_reg_r64, %g1, %l1
+        stxa    %l1, [%g0] ASI_SPARC_ERROR_EN_REG
+*/
+	!! GCC version
+	!! in file defines.h constant cregs_sparc_error_en_reg_r64:=3
 	!! so the effect should be "trap on correctable error" and "trap on uncorrectable error"
 	sethi %hh(0x3),%g1
 	or    %g1,%hm(0x3),%g1
@@ -176,7 +159,7 @@ dtlb_init_loop:
 	or    %l1,%lo(0x3),%l1
 	stxa  %l1, [%g0] (75)       			!! copy the content of the l1 register into the "SPARC Error Enable reg"
 
-	!! Enable L2-ucache error trap:	Unused in S1 Core
+	!! Enable L2-ucache error trap:	currently unused in S1 Core
 /*
 	setx	cregs_l2_error_en_reg_r64, %g1, %l1
 
@@ -190,44 +173,59 @@ dtlb_init_loop:
 */
 	
 	!! Load Partition ID (permits to multiple OSs to share the same TLB)
-        rd      %asr26, %l1				!! %asr26 corresponds to the "Strand Status and Control register"
-        set     0x0300, %g1				!! same as "sethi %hi(0x1c00), %g1" "or  %g1, 0x300, %g1"
+/*
+	!! SunStudio version
+        rd      %asr26, %l1
+        set     0x0300, %g1
         and     %l1, %g1, %l1
-
+        srlx    %l1, 8, %l1             ! %l1 has thread ID
+        setx    part_id_list, %g1, %g2
+        sllx    %l1, 3, %l1             ! offset - partition list
+        ldx     [%g2 + %l1], %g2        ! %g2 contains partition ID
+        mov     0x80, %g1
+        stxa    %g2, [%g1] 0x58
+*/
+/*
+	!! GCC version
+        rd      %asr26, %l1				!! ASR26 is the Strand Status and Control register
+        set     0x0300, %g1
+        and     %l1, %g1, %l1
         srlx    %l1, 8, %l1				!! %l1 has thread ID
-
-	!!setx	part_id_list, %g1, %g2  (part_id_list is defined in file hboot.s)
-	!! this instruction is expanded as:
 	sethi  %hi(0), %g1
 	sethi  %hi(0x4c000), %g2
 	mov  %g1, %g1
 	mov  %g2, %g2
 	sllx  %g1, 0x20, %g1
 	or  %g2, %g1, %g2
-
-        sllx    %l1, 3, %l1					!! offset - partition list
-        ldx     [%g2 + %l1], %g2				!! %g2 contains partition ID
+        sllx    %l1, 3, %l1				!! offset - partition list
+        ldx     [%g2 + %l1], %g2			!! %g2 contains partition ID
 	mov	0x80, %g1
-	stxa	%g2, [%g1] 0x58					!! I/DMMU Partition ID=g2
-
+	stxa	%g2, [%g1] 0x58				!! I/DMMU Partition ID=g2
+*/
 	!! Set Hypervisor Trap Base Address
-	!! setx HV_TRAP_BASE_PA, %l0, %l7
-	!! being HV_TRAP_BASE_PA=0x80000 it expands to:
+/*
+	!! SunStudio version
+        setx HV_TRAP_BASE_PA, %l0, %l7
+        wrhpr %l7, %g0, %htba	
+*/
+	!! GCC version
 	sethi %hh(0x80000),%g1
 	or    %g1,%hm(0x80000),%g1
 	sllx  %g1,32,%g1
 	sethi %hi(0x80000),%l1
 	or    %l1,%g1,%l1
 	or    %l1,%lo(0x80000),%l1
+	wrhpr %l7, %g0, %htba                          		!! bits 63-14 select the trap vector
 
-	wrhpr %l7, %g0, %htba                          		!! bits 63-14 select the trap vector for a trap served in Hyperprivileged mode
-
-	!! Load TSB config/base from memory and write to corresponding ASI's
-	!! set tsb-reg (4 at present) for one partition
+	!! Load TSB config/base from memory and write to corresponding ASIs
+	!! Set tsb-reg (4 at present) for one partition
 	!! 2 i-config, 2-dconfig
-
-	!!setx	tsb_config_base_list, %l0, %g1		
-	!! this instructions expands as
+/*
+	!! SunStudio version
+	setx    tsb_config_base_list, %l0, %g1
+*/
+/*
+	!! GCC version
 	sethi  %hi(0), %l0
 	sethi  %hi(0x4c000), %g1
 	mov  %l0, %l0
@@ -284,9 +282,48 @@ dtlb_init_loop:
 
 	!! Demap all itlb and dtlb
 	mov	0x80, %o2
-	stxa	%g0, [%o2] 0x57			!!registro ASI_IMMU_DEMAP=0 (IMMU TLB demap)
-	stxa	%g0, [%o2] 0x5f			!!registro ASI_DMMU_DEMAP=0 (DMMU TLB demap)
+	stxa	%g0, [%o2] 0x57			!! register ASI_IMMU_DEMAP=0 (IMMU TLB demap)
+	stxa	%g0, [%o2] 0x5f			!! register ASI_DMMU_DEMAP=0 (DMMU TLB demap)
+*/
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!! Instructions merged from file hboot_tlb_init.s !!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  
+!! Init all itlb entries
+	mov	0x30, %g1
+	mov	%g0, %g2
+itlb_init_loop:                  
+        !! clear data and tag entries of the TLB buffer
+        stxa	%g0, [%g1] 0x50  	!! IMMU TLB Tag Access register=0
+        stxa	%g0, [%g2] 0x55  	!! IMMU TLB Data Access register=0, g2 values from 0x000 to 0x7f8
+
+	add	%g2, 8, %g2    		!! increment the g2 register 8 bytes every time (64 bits)
+	cmp	%g2, 0x200 		!! compare g2 with 512 (512*8=4096=0x1000), but max VA=0x7F8
+	bne	itlb_init_loop  	!! if (g2!=512) then run another loop
+	nop
+
+!! Init all dtlb entries
+        mov	0x30, %g1  
+	mov	%g0, %g2
+dtlb_init_loop:
+        stxa	%g0, [%g1] 0x58  	!! DMMU TLB Tag Access register=0
+        stxa	%g0, [%g2] 0x5d  	!! DMMU TLB Data Access register=0, g2 values from 0x000 to 0x7f8
+
+	add	%g2, 8, %g2 		!! increment the g2 register 64 bits each time
+	cmp	%g2, 0x200  		!! compare g2 with 512
+	bne	dtlb_init_loop 		!! if (g2!=512) then run another loop
+	nop
+
+!! Clear itlb/dtlb valid
+	stxa	%g0, [%g0] 0x60		!! ASI_ITLB_INVALIDATE_ALL(IMMU TLB Invalidate register)=0
+	mov	0x8, %g1
+	stxa	%g0, [%g0 + %g1] 0x60	!! ASI_DTLB_INVALIDATE_ALL(DMMU TLB Invalidate register)=0
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!! End of inserted instructions !!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	
 	!! Initialize primary context register
 	mov 0x8, %l1
 	stxa %g0, [%l1] 0x21
@@ -296,21 +333,25 @@ dtlb_init_loop:
 	stxa %g0, [%l1] 0x21	
 
 	!! Initialize dtsb entry for i context zero ps0, ps1
-/*
 	!! Set LSU Control Register to enable icache, dcache, immu, dmmu
-	setx	cregs_lsu_ctl_reg_r64, %g1, %l1					!! aka "mov  0xf, %l1"
+/*
+	!! SunStudio version
+        setx    cregs_lsu_ctl_reg_r64, %g1, %l1
 */
-	!! Set LSU Control Register to enable immu, dmmu but NOT icache, dcache
-	mov  0xc, %l1
+	!! GCC version
+	!! LSU_CTL_REG[3]=1 (DMMU enabled)
+	!! LSU_CTL_REG[2]=1 (IMMU enabled)
+	!! LSU_CTL_REG[1]=1 (L1-dcache enabled)
+	!! LSU_CTL_REG[0]=1 (L1-icache enabled)
+	mov  0xF, %l1
 	stxa  %l1, [%g0] (69)
-	!! Register 69 is "Load/Store Unit Control Register", and value 0xC=1100 corresponds to:
-	!! .dm=1 (DMMU ENABLE)
-	!! .Im=1 (IMMU ENABLE)
-	!! .dc=0 (dcache not enabled)
-	!! .ic=0 (icache not enabled)
 
-        !! setx	HPriv_Reset_Handler, %g1, %g2
-	!! this instructions expands as
+	!! Reset handler
+/*
+	!! SunStudio version
+        setx    HPriv_Reset_Handler, %g1, %g2
+*/
+	!! GCC version
 	sethi  %hi(0), %g1
 	sethi  %hi(0x144000), %g2
 	mov  %g1, %g1
@@ -321,8 +362,12 @@ dtlb_init_loop:
 	rdhpr	%hpstate, %g3
 	wrpr	1, %tl             			!! current trap level = 1
 
-	!! setx	cregs_htstate_r64, %g1, %g4
-	!! this instructions expands as
+	!! HTSTATE
+/*
+	!! SunStudio version
+	setx    cregs_htstate_r64, %g1, %g4
+*/
+	!! GCC version
 	sethi %hh(0x0),%g1
 	or    %g1,%hm(0x0),%g1
 	sllx  %g1,32,%g1
@@ -330,11 +375,11 @@ dtlb_init_loop:
 	or    %l1,%g1,%l1
 	or    %l1,%lo(0x0),%l1
 
-	wrhpr	%g4, %g0, %htstate	!! it should reset the HTSTATE register that store the hyperpriviliged state after a trap
-	wrpr	0, %tl			!! current trap level corrente = 0 (No Trap)
-	mov     0x0, %o0		!! aka "clr %o0", don't delete since used in customized IMMU miss trap
+	wrhpr	%g4, %g0, %htstate	!! reset HTSTATE reg that store hyperpriviliged state after a trap
+	wrpr	0, %tl			!! current trap level = 0 (No Trap)
+	mov     0x0, %o0		!! please don't delete since used in customized IMMU miss trap
         jmp	%g2
-	wrhpr	%g0, 0x800, %hpstate    !! ensure bit 11 of the HPSTATE register is set (to avoid unwanted behaviors)
+!!	wrhpr	%g0, 0x800, %hpstate    !! ensure bit 11 of the HPSTATE register is set
         nop
         nop
 
