@@ -290,7 +290,7 @@ module sparc_ifu_fcl(/*AUTOARG*/
    itlb_fcl_tlbmiss_f_l, itlb_fcl_priv_s1, itlb_fcl_cp_s1, 
    itlb_fcl_imiss_s_l, fdp_fcl_pc_oor_vec_f, fdp_fcl_pc_oor_e, 
    fdp_fcl_op_s, fdp_fcl_op3_s, fdp_fcl_ibit_s, lsu_ifu_stallreq, 
-   ffu_ifu_stallreq, wbm_spc_stallreq, ifq_fcl_stallreq, dtu_inst_anull_e, 
+   ffu_ifu_stallreq, ifq_fcl_stallreq, dtu_inst_anull_e, 
    ifq_fcl_fill_thr, ifq_fcl_flush_sonly_e, tlu_ifu_trap_tid_w1, 
    tlu_ifu_trappc_vld_w1, tlu_ifu_trapnpc_vld_w1, 
    tlu_lsu_pstate_priv, tlu_lsu_pstate_am, tlu_hpstate_priv, 
@@ -383,7 +383,7 @@ module sparc_ifu_fcl(/*AUTOARG*/
    input       fdp_fcl_ibit_s;
 
    input       lsu_ifu_stallreq,
-	             ffu_ifu_stallreq, wbm_spc_stallreq,
+	             ffu_ifu_stallreq,
                ifq_fcl_stallreq;
    
    input       dtu_inst_anull_e;
@@ -2386,7 +2386,7 @@ module sparc_ifu_fcl(/*AUTOARG*/
                               ffu_stallreq_d1}),
                        .clk (clk), .se(se), .si(), .so());
    
-   assign all_stallreq = ifq_fcl_stallreq | wbm_spc_stallreq | lsu_stallreq_d1 | 
+   assign all_stallreq = ifq_fcl_stallreq | lsu_stallreq_d1 | 
                          ffu_stallreq_d1 | itlb_starv_alert;
 
    // leave out stall from ifq which goes directly to swl

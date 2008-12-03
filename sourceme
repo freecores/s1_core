@@ -1,7 +1,7 @@
 
 # General paths settings
 export S1_ROOT=~/s1_core
-export T1_ROOT=~/opensparc-t1
+export T1_ROOT=/opt/opensparc-t1
 export PATH=.:$S1_ROOT/tools/bin:$PATH
 
 # Filelist names

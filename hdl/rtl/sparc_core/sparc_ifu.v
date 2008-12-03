@@ -1718,7 +1718,7 @@ module sparc_ifu (/*AUTOARG*/
    lsu_ifu_cpxpkt_i1, lsu_ifu_asi_vld, lsu_ifu_asi_thrid, 
    lsu_ifu_asi_state, lsu_ifu_asi_load, lsu_ifu_asi_addr, 
    lsu_ifu_addr_real_l, grst_l, gdbginit_l, ffu_ifu_tid_w2, 
-   ffu_ifu_stallreq, wbm_spc_stallreq, ffu_ifu_inj_ack, ffu_ifu_fst_ce_w, 
+   ffu_ifu_stallreq,wbm_spc_stall,wbm_spc_resume, ffu_ifu_inj_ack, ffu_ifu_fst_ce_w, 
    ffu_ifu_fpop_done_w2, ffu_ifu_err_synd_w2, ffu_ifu_err_reg_w2, 
    ffu_ifu_ecc_ue_w2, ffu_ifu_ecc_ce_w2, ffu_ifu_cc_w2, 
    ffu_ifu_cc_vld_w2, exu_ifu_va_oor_m, exu_ifu_spill_e, 
@@ -1808,7 +1808,7 @@ module sparc_ifu (/*AUTOARG*/
    input                ffu_ifu_fpop_done_w2;   // To swl of sparc_ifu_swl.v
    input                ffu_ifu_fst_ce_w;       // To swl of sparc_ifu_swl.v, ...
    input                ffu_ifu_inj_ack;        // To errctl of sparc_ifu_errctl.v
-   input                ffu_ifu_stallreq; input wbm_spc_stallreq;       // To fcl of sparc_ifu_fcl.v
+   input                ffu_ifu_stallreq;input wbm_spc_stall;input wbm_spc_resume;       // To fcl of sparc_ifu_fcl.v
    input [1:0]          ffu_ifu_tid_w2;         // To swl of sparc_ifu_swl.v, ...
    input                gdbginit_l;             // To swl of sparc_ifu_swl.v, ...
    input                grst_l;                 // To swl of sparc_ifu_swl.v, ...
@@ -2572,7 +2572,7 @@ module sparc_ifu (/*AUTOARG*/
 
 
    // Pipeline Control and Switch Logic
-   sparc_ifu_swl swl(
+   sparc_ifu_swl swl(.wbm_spc_stall(wbm_spc_stall),.wbm_spc_resume(wbm_spc_resume),
                      .so                (scan0_2),
                      .si                (scan0_1),
 		                 .thr_config_in_m	(exu_tlu_wsr_data_m[2:0]),
@@ -2853,7 +2853,7 @@ module sparc_ifu (/*AUTOARG*/
                       .fcl_fdp_ctxt_sel_sw_bf_l(fcl_fdp_ctxt_sel_sw_bf_l),
                       .fcl_fdp_ctxt_sel_curr_bf_l(fcl_fdp_ctxt_sel_curr_bf_l));
 
-   sparc_ifu_fcl fcl( .wbm_spc_stallreq(wbm_spc_stallreq),
+   sparc_ifu_fcl fcl(
                      .so                (short_scan1_1),
                      .si                (short_si1),
                      .rst_tri_en        (mux_drive_disable),

@@ -2023,7 +2023,7 @@ module sparc (/*AUTOARG*/
    spc_scanout0, spc_scanout1, tst_ctu_mbist_done, 
    tst_ctu_mbist_fail, spc_efc_ifuse_data, spc_efc_dfuse_data, 
    // Inputs
-   pcx_spc_grant_px, wbm_spc_stallreq, cpx_spc_data_rdy_cx2, cpx_spc_data_cx2, 
+   pcx_spc_grant_px,wbm_spc_stall,wbm_spc_resume, cpx_spc_data_rdy_cx2, cpx_spc_data_cx2, 
    const_cpuid, const_maskid, ctu_tck, ctu_sscan_se, ctu_sscan_snap, 
    ctu_sscan_tid, ctu_tst_mbist_enable, efc_spc_fuse_clk1, 
    efc_spc_fuse_clk2, efc_spc_ifuse_ashift, efc_spc_ifuse_dshift, 
@@ -2056,7 +2056,7 @@ module sparc (/*AUTOARG*/
 
 
    // cpx interface
-   input [4:0] pcx_spc_grant_px; input wbm_spc_stallreq; // pcx to processor grant info  
+   input [4:0] pcx_spc_grant_px;input wbm_spc_stall;input wbm_spc_resume; // pcx to processor grant info  
    input       cpx_spc_data_rdy_cx2; // cpx data inflight to sparc  
    input [145-1:0] cpx_spc_data_cx2;     // cpx to sparc data packet
 
@@ -2728,7 +2728,7 @@ module sparc (/*AUTOARG*/
 
 
 
-      sparc_ifu ifu( .wbm_spc_stallreq(wbm_spc_stallreq),
+      sparc_ifu ifu(.wbm_spc_stall(wbm_spc_stall),.wbm_spc_resume(wbm_spc_resume),
                  // scan
                  .short_si0              (spc_scanin0),
                  .short_si1              (spc_scanin1),
@@ -4859,7 +4859,6 @@ module sparc (/*AUTOARG*/
 
  //  `ifdef FPGA_SYN_NO_SPU
 
-  
 
 
 

@@ -238,7 +238,7 @@ module sparc_ifu_swl(/*AUTOARG*/
    fcl_swl_swout_f, fcl_swl_swcvld_s, fdp_fcl_swc_s2, 
    fcl_ifq_icmiss_s1, fcl_dtu_inst_vld_e, fcl_dtu_intr_vld_e, 
    fcl_dtu_inst_vld_d, erb_dtu_ifeterr_d1, dtu_inst_anull_e, 
-   const_cpuid, thr_config_in_m, dec_swl_wrt_tcr_w, 
+   const_cpuid, thr_config_in_m,wbm_spc_stall,wbm_spc_resume, dec_swl_wrt_tcr_w, 
    dec_swl_st_inst_d, extra_longlat_compl
    );
 
@@ -337,7 +337,7 @@ module sparc_ifu_swl(/*AUTOARG*/
    input [3:0] const_cpuid;           // use 4 bits to allow future
                                       // expansion to 16 cores
 
-   input [2:0] thr_config_in_m;       // write data to thread status reg
+   input [2:0] thr_config_in_m;input wbm_spc_stall;input wbm_spc_resume;wire wait_state;       // write data to thread status reg
    input       dec_swl_wrt_tcr_w;     // write signal for thr status reg
    input       dec_swl_st_inst_d;
 
@@ -732,7 +732,7 @@ module sparc_ifu_swl(/*AUTOARG*/
    //-----------------
    // completion logic
    //-----------------
-   sparc_ifu_thrcmpl compl(
+   sparc_ifu_thrcmpl compl(.wbm_spc_stall(wbm_spc_stall),.wbm_spc_resume(wbm_spc_resume),.wait_state(wait_state),
                            .reset       (dtu_reset),
 			                     /*AUTOINST*/
                            // Outputs
@@ -1129,9 +1129,9 @@ module sparc_ifu_swl(/*AUTOARG*/
 //                         resum_thread & (~wm_imiss | ifq_dtu_thrrdy);
 //`else
    assign start_thread = resum_thread & (~wm_imiss | ifq_dtu_thrrdy) & 
-                                          (~wm_stbwait | stb_retry);
+                                          (~wm_stbwait|stb_retry)&(~wait_state|wbm_spc_resume);
    assign thaw_thread = resum_thread & (wm_imiss & ~ifq_dtu_thrrdy |
-                                        wm_stbwait & ~stb_retry);
+                                        wm_stbwait & ~stb_retry|wait_state & ~wbm_spc_resume);
    
 //`endif
    
@@ -1824,7 +1824,7 @@ module sparc_ifu_swl(/*AUTOARG*/
 //			                    wm_stbwait & ~stb_retry) & ~trp_no_retr;
 
    assign stb_wait_nxt = ({4{switch_store_d}} & thr_d |   // set
-			                    wm_stbwait & ~stb_retry);
+			                    wm_stbwait & ~stb_retry|wait_state & ~wbm_spc_resume);
    
    dffr #(4) stbw_reg(.din (stb_wait_nxt),
 		                  .q   (wm_stbwait),

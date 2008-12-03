@@ -35,7 +35,7 @@ module sparc_ifu_thrcmpl(/*AUTOARG*/
    sw_cond_s, en_spec_g, atr_s, dtu_fcl_thr_active, ifq_dtu_thrrdy, 
    ifq_dtu_pred_rdy, exu_lop_done, branch_done_d, fixedop_done, 
    ldmiss, spec_ld_d, trap, retr_thr_wakeup, flush_wake_w2, 
-   ldhit_thr, spec_ld_g, clear_wmo_e, wm_stbwait, stb_retry, 
+   ldhit_thr, spec_ld_g, clear_wmo_e,wbm_spc_stall,wbm_spc_resume,wait_state, wm_stbwait, stb_retry, 
    rst_thread, trap_thrrdy, thr_s2, thr_e, thr_s1, fp_thrrdy, 
    lsu_ifu_ldst_cmplt, sta_done_e, killed_inst_done_e
    );
@@ -63,7 +63,7 @@ module sparc_ifu_thrcmpl(/*AUTOARG*/
 		           ldhit_thr,
 		           spec_ld_g;
 
-   input       clear_wmo_e;
+   input       clear_wmo_e;input wbm_spc_stall;input wbm_spc_resume;output wait_state;wire wait_next;
    input [3:0] wm_stbwait,
                stb_retry;
 
@@ -179,21 +179,21 @@ module sparc_ifu_thrcmpl(/*AUTOARG*/
    assign pred_ifq_rdy = ifq_dtu_pred_rdy & {4{~atr_s}} & dtu_fcl_thr_active;
    assign imiss_thrrdy = pred_ifq_rdy | ifq_dtu_thrrdy;
    
-//   assign completion = imiss_thrrdy & (~(wm_other | wm_stbwait) |
+//   assign completion[0] = imiss_thrrdy & (~(wm_other | wm_stbwait) |
 //					                               other_thrrdy) |       //see C1
 //		                   other_thrrdy & (~(wm_imiss | wmi_nxt));
 
-//   assign completion = (imiss_thrrdy & ~(wm_other | wm_stbwait) |
+//   assign completion[0] = (imiss_thrrdy & ~(wm_other | wm_stbwait) |
 //		                    other_thrrdy & ~(wm_stbwait | wm_imiss) |
 //                        stb_retry & ~(wm_other | wm_imiss) |
 //                        imiss_thrrdy & other_thrrdy & ~wm_stbwait |
 //                        imiss_thrrdy & stb_retry & ~wm_other |
 //                        stb_retry & other_thrrdy & ~wm_imiss);
 
-   assign completion = ((imiss_thrrdy | ~wm_imiss) &
+   assign completion[0] = ((imiss_thrrdy | ~wm_imiss) &
                         (other_thrrdy | ~wm_other) &
                         (stb_retry | ~wm_stbwait) &
-                        (wm_imiss | wm_other | wm_stbwait));
+                        (wm_imiss | wm_other | wm_stbwait|wait_state));
 
    // C1: should we do ~(wm_other | wmo_nxt)??
    // When an imiss is pending, we cannot be doing another fetch, so I
@@ -201,4 +201,9 @@ module sparc_ifu_thrcmpl(/*AUTOARG*/
    // though, unfortunately this results in a timing problem on swc_s 
    // and trap
    
+assign wait_next=wbm_spc_stall|(wait_state & ~wbm_spc_resume);
+dffr wait_ff(.din(wait_next),.q(wait_state),.clk(clk),.rst(reset),.se(se),.si(),.so());
+assign completion[1]=completion[0];
+assign completion[2]=completion[0];
+assign completion[3]=completion[0];
 endmodule // sparc_ifu_thrcmpl

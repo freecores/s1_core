@@ -82,16 +82,8 @@
 	stxa  %l1, [%g0] (69)
 
 	!! Set hpstate.red = 0 and hpstate.enb = 1
-/*
-	!! SunStudio version
 	rdhpr   %hpstate, %l1
 	wrhpr   %l1, 0x820, %hpstate
-*/
-	!! GCC version
-	rdhpr	%hpstate, %l1 
-	and %l1,0x820,%l2
-	xor %l2,0x800,%l2
-	wrhpr %l1,%l2,%hpstate		!! ensure red=0 and enb=1 leaving the other 2 bits of the register unchanged
 
 	!! Initialize Interrupt Queue Registers: currently unused in S1 Core
 /*
@@ -353,14 +345,14 @@ dtlb_init_loop:
 */
 	!! GCC version
 	sethi  %hi(0), %g1
-	sethi  %hi(0x144000), %g2
+	sethi  %hi(0x40000), %g2	!! New jump address in memory (used by last op of this file)
 	mov  %g1, %g1
 	mov  %g2, %g2
 	sllx  %g1, 0x20, %g1
 	or  %g2, %g1, %g2
 	
 	rdhpr	%hpstate, %g3
-	wrpr	1, %tl             			!! current trap level = 1
+	wrpr	1, %tl			!! current trap level = 1
 
 	!! HTSTATE
 /*
